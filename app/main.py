@@ -1,75 +1,29 @@
-import json
 import logging
-import time
-from typing import List
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from update_consumer import UpdateConsumer
+from app.routers.event import router as EventRouter
+from app.routers.publication import router as PublicationRouter
+
+from starlette.requests import Request
+from starlette.staticfiles import StaticFiles
+from starlette.responses import RedirectResponse, JSONResponse, HTMLResponse
 
 app = FastAPI()
 
-html = """
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Tweets</title>
-    </head>
-    <body>
-        <h1>WebSocket Tweets from Kafka</h1>
-        <textarea id='tweets'>
-        </textarea>
-        <script>
-            var ws = new WebSocket("ws://localhost:8080/ws");
-            ws.onmessage  = function(event) {
-                console.log(event);
-                var tweets = document.getElementById('tweets');
-                tweets.value = event.data;
-            };
-        </script>
-    </body>
-</html>
-"""
+app.mount("/static", StaticFiles(directory="/vue/dist"), name="static")
 
+app.include_router(EventRouter, tags=["Event"], prefix="/api/event")
+app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publication")
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
+# @app.get("/app")
+# def root():
+#     with open('/vue/dist/index.html') as f:
+#         logging.warning("errors " + f.errors)
+#         return HTMLResponse(content=f.read(), status_code=200)\
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except WebSocketDisconnect:
-                self.active_connections.remove(connection)
-                print('websocket disconnect')
-
-
-manager = ConnectionManager()
-
-@app.on_event("startup")
-async def startup_event():
-    logging.warning("start Mongo DB connector")
-    time.sleep(15)
-    # how to connect this best
-    update_consumer = UpdateConsumer(1, manager)
-
-
-
-
-@app.get("/")
-async def get():
-    print('browser connected')
-    return HTMLResponse(html)
-
-
-# this is where the js can connect
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    print('websocket connected')
+@app.get("/app")
+def root():
+    with open('/vue/dist/index.html') as f:
+        return HTMLResponse(content=f.read(), status_code=200)
