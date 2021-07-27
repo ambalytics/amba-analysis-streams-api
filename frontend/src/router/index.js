@@ -1,11 +1,14 @@
-import {createRouter, createWebHashHistory} from 'vue-router'
+import Vue from 'vue'
+import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
-import Event from '../views/Event.vue'
-import Publications from '../views/Publications.vue'
-import Publication from '../views/Publication.vue'
+import Event from "../views/Event";
+import Publications from "../views/Publications";
+import Publication from "../views/Publication";
+
+Vue.use(VueRouter)
 
 const routes = [
-    {
+   {
         path: '/',
         name: 'Home',
         component: Home
@@ -35,9 +38,8 @@ const routes = [
     }
 ]
 
-const router = createRouter({
-    history: createWebHashHistory(),
-    routes
+const router = new VueRouter({
+  routes
 })
 
 export default router

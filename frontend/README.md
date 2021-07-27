@@ -1,4 +1,4 @@
-# amba-streams-frontend
+# frontend
 
 ## Project setup
 ```

@@ -1,7 +1,7 @@
 FROM node:latest AS build
-COPY /amba-streams-frontend /vue
+COPY /frontend /vue
 WORKDIR /vue
-RUN npm install --save axios vue-axios
+
 RUN npm install && npm run build
 # this https://github.com/willfong/docker-fastapi-vue
 # not https://developer.ibm.com/recipes/tutorials/a-best-practice-in-dockerizing-vue-js-application/

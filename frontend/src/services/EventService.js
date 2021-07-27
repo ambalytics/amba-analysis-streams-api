@@ -12,6 +12,10 @@ class EventService {
   newest() {
     return http.get("/event/newest");
   }
+
+  forPublication(id) {
+    return http.get(`/event/publication/${id}`);
+  }
 }
 
 export default new EventService();

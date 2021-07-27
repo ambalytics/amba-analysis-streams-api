@@ -2,7 +2,6 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.event import router as EventRouter
 from app.routers.publication import router as PublicationRouter
@@ -13,25 +12,10 @@ from starlette.responses import RedirectResponse, JSONResponse, HTMLResponse
 
 app = FastAPI()
 
-origins = [
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:8081",
-    "*"
-]
+app.mount("/static", StaticFiles(directory="amba-streams-frontend/public"), name="static")
 
-# todo check
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.mount("/static", StaticFiles(directory="/vue/dist"), name="static")
-
-app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publication")
 app.include_router(EventRouter, tags=["Event"], prefix="/api/event")
+app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publication")
 
 # @app.get("/app")
 # def root():
@@ -41,5 +25,5 @@ app.include_router(EventRouter, tags=["Event"], prefix="/api/event")
 
 @app.get("/app")
 def root():
-    with open('/vue/dist/index.html') as f:
+    with open('amba-streams-frontend/public/index.html') as f:
         return HTMLResponse(content=f.read(), status_code=200)
