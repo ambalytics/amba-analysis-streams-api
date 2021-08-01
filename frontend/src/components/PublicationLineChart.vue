@@ -48,12 +48,7 @@
                         labels: label,
                         datasets: [{
                             label: '10.1134/S1560354716060058',
-                            backgroundColor: [
-                                'rgb(248, 121, 121)',
-                                'rgb(54, 162, 235)',
-                                'rgb(255, 205, 86)',
-                                'rgb(92,255,150)'
-                            ],
+                            backgroundColor: 'rgb(248, 121, 121)',
                             hoverOffset: 4,
                             data: data,
                         }],

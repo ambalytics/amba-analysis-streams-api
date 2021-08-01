@@ -27,13 +27,21 @@
                     <publication-line-chart :id="id" :getter="timeOfDayGetter"></publication-line-chart>
                 </v-card>
             </v-col>
+
             <v-col cols="4">
+                <v-card elevation="2">
+                            <v-card-title>Publications - 8020</v-card-title>
+                </v-card>
                 <v-card elevation="2">
                             <v-card-title>Hashtags</v-card-title>
                     <publication-type-chart :id="id" :getter="hashtagsGetter"></publication-type-chart>
                 </v-card>
             </v-col>
+
             <v-col cols="4">
+                <v-card elevation="2">
+                            <v-card-title>Events - 30092</v-card-title>
+                </v-card>
                 <v-card elevation="2">
                             <v-card-title>Entities</v-card-title>
                     <publication-type-chart :id="id" :getter="entitiesGetter"></publication-type-chart>
