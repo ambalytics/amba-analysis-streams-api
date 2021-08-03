@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import motor.motor_asyncio
@@ -7,7 +8,8 @@ from bson.objectid import ObjectId
 config = {
     'mongo_url': "mongodb://root:example@mongo_db:27017/",
     'mongo_client': "events",
-    'mongo_collection': "linked",
+    'mongo_collection': "publication",
+    'mongo_collection_events': "processed",
 }
 
 MONGO_DETAILS = config['mongo_url']
@@ -15,6 +17,7 @@ motor_client = motor.motor_asyncio.AsyncIOMotorClient(
     MONGO_DETAILS)  # https://medium.com/@bruno.fosados/simple-learn-docker-fastapi-and-vue-js-second-part-backend-fastapi-cec2e1e093a9 instead link
 database = motor_client[config['mongo_client']]
 publication_collection = database[config['mongo_collection']]
+events_collection = database[config['mongo_collection_events']]
 
 
 # todo
@@ -28,6 +31,7 @@ def publication_helper(publication) -> dict:
     return publication
 
 
+# helper
 def fix_grouped_publication(publication):
     if len(publication['_id']) > 1:
         for key, value in publication['_id'].items():
@@ -48,390 +52,185 @@ async def retrieve_publications():
 
 # Retrieve a publication with a matching ID
 async def retrieve_publication(id):
-    publication = await publication_collection.find_one({"$obj.data.id": str(id)})
+    logging.warning('retrieve publication ' + id)
+    publication = await publication_collection.find_one({"_id": str(id)})
     if publication:
         return publication_helper(publication)
 
 
-# Retrieve the top publications by tweet count
+# Retrieve the top publications by tweet score
 async def top_publications(limit=10):
     publications = []
-    async for publication in publication_collection.aggregate([
+    async for publication in events_collection.aggregate([
         {
+            '$project': {
+                'doi': '$obj.data.doi',
+                'score': '$subj.processed.score',
+                'words': '$subj.processed.words',
+                'contains_abstract': '$subj.processed.contains_abstract',
+                'bot_rating': '$subj.processed.bot_rating',
+                'question_mark_count': '$subj.processed.question_mark_count',
+                'exclamation_mark_count': '$subj.processed.exclamation_mark_count',
+                'hashtags': '$subj.processed.hashtags',
+                'annotations': '$subj.processed.annotations',
+                'a_types': '$subj.processed.a_types',
+                'length': '$subj.processed.length'
+            }
+        }, {
             '$group': {
-                '_id': {
-                    'doi': '$obj.data.doi',
-                    'name': '$obj.data.title'
+                '_id': '$doi',
+                'count': {
+                    '$sum': 1
                 },
-                'count': {
-                    '$sum': 1
+                'score': {
+                    '$sum': '$score'
+                },
+                'question_mark_count': {
+                    '$sum': '$question_mark_count'
+                },
+                'exclamation_mark_count': {
+                    '$sum': '$exclamation_mark_count'
+                },
+                'length': {
+                    '$sum': '$length'
+                },
+                'contains_abstract': {
+                    '$sum': '$contains_abstract'
+                },
+                'bot_rating': {
+                    '$sum': '$bot_rating'
+                },
+                'words': {
+                    '$push': '$words'
+                },
+                'hashtags': {
+                    '$addToSet': '$hashtags'
+                },
+                'annotations': {
+                    '$addToSet': '$annotations'
+                },
+                'a_types': {
+                    '$addToSet': '$a_types'
+                }
+            }
+        }, {
+            '$project': {
+                'doi': '$_id',
+                'count': 1,
+                'question_mark_count': 1,
+                'exclamation_mark_count': 1,
+                'length_avg': {
+                    '$divide': [
+                        '$length', '$count'
+                    ]
+                },
+                'score': 1,
+                'contains_abstract_avg': {
+                    '$divide': [
+                        '$contains_abstract', '$count'
+                    ]
+                },
+                'bot_rating_avg': {
+                    '$divide': [
+                        '$bot_rating', '$count'
+                    ]
+                },
+                'words': {
+                    '$reduce': {
+                        'input': '$words',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                },
+                'hashtags': {
+                    '$reduce': {
+                        'input': '$hashtags',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                },
+                'annotations': {
+                    '$reduce': {
+                        'input': '$annotations',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                },
+                'a_types': {
+                    '$reduce': {
+                        'input': '$a_types',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
                 }
             }
         }, {
             '$sort': {
-                'count': -1
+                'score': -1
             }
         }, {
             '$limit': int(limit)
-        }
-    ]):
-        publications.append(fix_grouped_publication(publication))
-    return publications
-
-
-# count all different publications
-async def count_publications():
-    result = []
-    async for publication in publication_collection.aggregate([
-        {
-            '$group': {
-                '_id': '$obj.data.doi'
+        }, {
+            '$lookup': {
+                'from': 'publication',
+                'localField': '_id',
+                'foreignField': '_id',
+                'as': 'publication'
             }
         }, {
-            '$count': 'count'
-        }
-    ]):
-        result.append(publication)
-    return result
-
-
-# get count of group by field
-async def group_count_publications(field='obj.data.doi', limit=10):
-    publications = []
-    async for publication in publication_collection.aggregate([
-        {
-            '$group': {
-                '_id': '$' + field,
-                'count': {
-                    '$sum': 1
-                }
+            '$unwind': {
+                'path': '$publication',
+                'preserveNullAndEmptyArrays': False
             }
         }, {
-            '$sort': {
-                'count': -1
-            }
-        }, {
-            '$limit': int(limit)
-        }
-    ]):
-        publications.append(publication_helper(publication))
-    return publications
-
-
-# get count of types
-async def get_types(id):
-    publications = []
-
-    query = [
-        {
-            '$addFields': {
-                'type': {
-                    '$ifNull': [
-                        '$subj.data.referenced_tweets.type', 'tweet'
+            '$replaceRoot': {
+                'newRoot': {
+                    '$mergeObjects': [
+                        '$publication', '$$ROOT'
                     ]
                 }
             }
         }, {
-            '$unwind': {
-                'path': '$type',
-                'preserveNullAndEmptyArrays': True
-            }
-        }, {
-            '$group': {
-                '_id': '$type',
-                'count': {
-                    '$sum': 1
-                }
-            }
-        }, {
-            '$sort': {
-                'count': -1
-            }
+            '$unset': 'publication'
         }
-    ]
-    if id:
-        query = [
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            }, {
-                '$addFields': {
-                    'type': {
-                        '$ifNull': [
-                            '$subj.data.referenced_tweets.type', 'tweet'
-                        ]
-                    }
-                }
-            }, {
-                '$unwind': {
-                    'path': '$type',
-                    'preserveNullAndEmptyArrays': True
-                }
-            }, {
-                '$group': {
-                    '_id': '$type',
-                    'count': {
-                        '$sum': 1
-                    }
-                }
-            }, {
-                '$sort': {
-                    'count': -1
-                }
-            }
-        ]
-
-    async for publication in publication_collection.aggregate(query):
+    ]):
         publications.append(publication_helper(publication))
     return publications
 
 
-# get count sources
-async def get_sources(id):
+# Retrieve the top publications by tweet score
+async def twitter_data_publication(doi):
     publications = []
-
-    query = [
-        {
-            '$group': {
-                '_id': '$subj.data.source',
-                'count': {
-                    '$sum': 1
-                }
-            }
-        }, {
-            '$sort': {
-                'count': -1
-            }
-        }
-    ]
-    if id:
-        query = [
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            }, {
-                '$group': {
-                    '_id': '$subj.data.source',
-                    'count': {
-                        '$sum': 1
-                    }
-                }
-            }, {
-                '$sort': {
-                    'count': -1
-                }
-            }
-        ]
-    query.append({
-        '$limit': 20
-    })
-
-    async for publication in publication_collection.aggregate(query):
-        publications.append(publication_helper(publication))
-    return publications
-
-
-# get count sources
-async def get_top_authors(id, original=False):
-    publications = []
-    query = []
-    if id:
-        query.append(
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            })
-
-    query.extend([
+    async for publication in events_collection.aggregate([
         {
             '$match': {
-                'subj.data.in_reply_to_user_id': {
-                    '$exists': False
-                }
-            }
-        },
-        {
-            '$match': {
-                'subj.data.referenced_tweets': {
-                    '$exists': False
-                }
-            }
-        }])
-
-    if original:
-        query.extend([
-            {
-                '$group': {
-                    '_id': '$subj.data.author_id',
-                    'total': {
-                        '$sum': 1
-                    }
-                }
-            },
-            {
-                '$sort': {
-                    'total': -1
-                }
-            }
-        ])
-
-    query.append(
-        {
-            '$limit': 20
-        })
-
-    async for publication in publication_collection.aggregate(query):
-        publications.append(publication_helper(publication))
-    return publications
-
-
-# get count languages
-async def get_top_lang(id):
-    publications = []
-    query = []
-    if id:
-        query.append(
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            })
-    query.extend([
-        {
-            '$group': {
-                '_id': '$subj.data.lang',
-                'count': {
-                    '$sum': 1
-                }
-            }
-        },
-        {
-            '$sort': {
-                'count': -1
-            }
-        },
-        {
-            '$limit': 20
-        }])
-
-    async for publication in publication_collection.aggregate(query):
-        publications.append(publication_helper(publication))
-    return publications
-
-
-# get count languages
-async def get_top_entities(id):
-    publications = []
-    query = []
-    if id:
-        query.append(
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            })
-    query.extend([{
-        '$unwind': {
-            'path': '$subj.data.context_annotations',
-            'preserveNullAndEmptyArrays': False
-        }
-    }, {
-        '$group': {
-            '_id': '$subj.data.context_annotations.entity.name',
-            'count': {
-                '$sum': 1
-            }
-        }
-    }, {
-        '$sort': {
-            'count': -1
-        }
-    }, {
-        '$limit': 20
-    }
-    ])
-
-    async for publication in publication_collection.aggregate(query):
-        publications.append(publication_helper(publication))
-    return publications
-
-
-# get count hashtags
-async def get_top_hashtags(id):
-    publications = []
-    query = []
-    if id:
-        query.append(
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            })
-    query.extend([
-        {
-            '$unwind': {
-                'path': '$subj.data.entities.hashtags',
-                'preserveNullAndEmptyArrays': False
+                'obj.data.doi': str(doi)
             }
         }, {
-            '$group': {
-                '_id': '$subj.data.entities.hashtags.tag',
-                'count': {
-                    '$sum': 1
+            '$replaceRoot': {
+                'newRoot': {
+                    '$mergeObjects': [
+                        '$subj.processed', '$subj.data'
+                    ]
                 }
-            }
-        }, {
-            '$sort': {
-                'count': -1
-            }
-        },
-        {
-            '$limit': 20
-        }
-    ])
-
-    async for publication in publication_collection.aggregate(query):
-        publications.append(publication_helper(publication))
-    return publications
-
-
-# get hour binned periodic count
-async def get_tweet_time_of_day(id):
-    publications = []
-    query = []
-    if id:
-        query.append(
-            {
-                '$match': {
-                    'obj.data.id': str(id)
-                }
-            })
-    query.extend([
-        {
-            '$addFields': {
-                'created_at': {
-                    '$toDate': '$occurred_at'
-                }
-            }
-        }, {
-            '$group': {
-                '_id': {
-                    '$hour': '$created_at'
-                },
-                'total': {
-                    '$sum': 1
-                }
-            }
-        }, {
-            '$sort': {
-                '_id': 1
             }
         }
-    ])
-
-    async for publication in publication_collection.aggregate(query):
+    ]):
         publications.append(publication_helper(publication))
     return publications
