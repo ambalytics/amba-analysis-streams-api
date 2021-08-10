@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
 
 from app.daos.stats import (
-    words_from_tweet,
+    get_words,
     count_publications,
     group_count_publications,
     get_types,
@@ -15,6 +15,10 @@ from app.daos.stats import (
     get_top_entities,
     get_top_hashtags,
     get_tweet_time_of_day,
+    get_country_list,
+    get_tweet_author_count,
+    get_followers_reached,
+    get_tweet_count,
 )
 from app.models.stats import (
     ErrorResponseModel,
@@ -24,9 +28,10 @@ from app.models.stats import (
 
 router = APIRouter()
 
+
 @router.get("/words", response_description="count retrieved")
-async def get_words():
-    publications = await words_from_tweet()
+async def get_t_words(id):
+    publications = await get_words(id)
     if publications:
         return ResponseModel(publications, "event data retrieved successfully")
     return ResponseModel(publications, "Empty list returned")
@@ -106,6 +111,41 @@ async def get_publication_hashtags(id: Optional[str] = None):
 @router.get("/dayhour", response_description="publication data retrieved")
 async def get_publication_dayhour(id: Optional[str] = None):
     publication = await get_tweet_time_of_day(id)
+    if publication:
+        return ResponseModel(publication, "publication data retrieved successfully")
+    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+
+
+# get author locations
+@router.get("/locations", response_description="publication data retrieved")
+async def get_country_locations(id: Optional[str] = None):
+    publication = await get_country_list(id)
+    if publication:
+        return ResponseModel(publication, "publication data retrieved successfully")
+    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+
+
+# get total followers reached
+@router.get("/followers", response_description="publication data retrieved")
+async def get_followers(id: Optional[str] = None):
+    publication = await get_followers_reached(id)
+    if publication:
+        return ResponseModel(publication, "publication data retrieved successfully")
+    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+
+
+# get author count
+@router.get("/authorcount", response_description="publication data retrieved")
+async def get_author_count(id: Optional[str] = None):
+    publication = await get_tweet_author_count(id)
+    if publication:
+        return ResponseModel(publication, "publication data retrieved successfully")
+    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+
+# get author count
+@router.get("/tweetcount", response_description="publication data retrieved")
+async def get_count_tweet(id: Optional[str] = None):
+    publication = await get_tweet_count(id)
     if publication:
         return ResponseModel(publication, "publication data retrieved successfully")
     return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")

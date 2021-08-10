@@ -16,6 +16,7 @@ stats_collection = database[config['mongo_collection']]
 def stats_helper(stats) -> dict:
     return stats
 
+
 # deprecated only testing
 async def words_from_tweet():
     result = []
@@ -77,6 +78,7 @@ async def count_publications():
     ]):
         result.append(publication)
     return result
+
 
 # get count of types
 async def get_types(id):
@@ -191,6 +193,81 @@ async def get_sources(id):
     async for publication in stats_collection.aggregate(query):
         publications.append(stats_helper(publication))
     return publications
+
+
+# get count sources
+async def get_words(id):
+    query = [
+        {
+            '$match': {
+                'obj.data.doi': str(id)
+            }
+        }, {
+            '$project': {
+                'doi': '$obj.data.doi',
+                'words': '$subj.processed.words'
+            }
+        }, {
+            '$group': {
+                '_id': '$doi',
+                'words': {
+                    '$push': '$words'
+                }
+            }
+        }, {
+            '$project': {
+                'doi': '$_id',
+                'words': {
+                    '$reduce': {
+                        'input': '$words',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                }
+            }
+        }, {
+            '$project': {
+                'doi': '$_id',
+                'words': {
+                    '$reduce': {
+                        'input': '$words',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                }
+            }
+        }, {
+            '$unwind': {
+                'path': '$words',
+                'preserveNullAndEmptyArrays': False
+            }
+        }, {
+            '$match': {
+                'words': {
+                    '$regex': '([a-zA-Z])\w+'
+                }
+            }
+        }, {
+            '$group': {
+                '_id': '$doi',
+                'words': {
+                    '$push': '$words'
+                }
+            }
+        }
+    ]
+    publications = []
+    async for publication in stats_collection.aggregate(query):
+        publications.append(stats_helper(publication))
+    return publications[0]
 
 
 # get count sources
@@ -396,3 +473,158 @@ async def get_tweet_time_of_day(id):
         publications.append(stats_helper(publication))
     return publications
 
+
+# get list of user countries
+async def get_country_list(id):
+    result = []
+    query = []
+    if id:
+        query.append(
+            {
+                '$match': {
+                    'obj.data.doi': str(id)
+                }
+            })
+    query.extend([
+        {
+            '$sort': {
+                'timestamp': -1
+            }
+        }, {
+            '$match': {
+                'subj.processed.location': {
+                    '$exists': True
+                }
+            }
+        }, {
+            '$unwind': {
+                'path': '$subj.data.includes.users',
+                'preserveNullAndEmptyArrays': False
+            }
+        }, {
+            '$project': {
+                'loc': '$subj.data.includes.users',
+                'p': '$subj.processed'
+            }
+        }, {
+            '$match': {
+                'loc.location': {
+                    '$exists': True
+                }
+            }
+        }, {
+            '$project': {
+                'a': '$loc.location',
+                'b': '$p.location'
+            }
+        }, {
+            '$group': {
+                '_id': '$b',
+                'sum': {
+                    '$sum': 1
+                }
+            }
+        }, {
+            '$sort': {
+                'sum': -1
+            }
+        }
+    ])
+
+    async for r in stats_collection.aggregate(query):
+        result.append(stats_helper(r))
+    return result
+
+
+# get number of different tweet authors
+async def get_tweet_author_count(id):
+    result = []
+    query = []
+    if id:
+        query.append(
+            {
+                '$match': {
+                    'obj.data.doi': str(id)
+                }
+            })
+    query.extend([
+        {
+            '$project': {
+                'a_id': '$subj.data.author_id',
+                'id': '$id'
+            }
+        }, {
+            '$group': {
+                '_id': '$a_id',
+                'count': {
+                    '$sum': 1
+                }
+            }
+        }, {
+            '$count': 'count'
+        }, {
+            '$sort': {
+                'sum': -1
+            }
+        }
+    ])
+
+    async for r in stats_collection.aggregate(query):
+        result.append(stats_helper(r))
+    return result
+
+# get number of different tweet authors
+async def get_tweet_count(id):
+    result = []
+    query = []
+    if id:
+        query.append(
+            {
+                '$match': {
+                    'obj.data.doi': str(id)
+                }
+            })
+    query.extend([
+        {
+            '$count': 'count'
+        }
+    ])
+
+    async for r in stats_collection.aggregate(query):
+        result.append(stats_helper(r))
+    return result
+
+
+# get total sum of followers reached
+async def get_followers_reached(id):
+    result = []
+    query = []
+    if id:
+        query.append(
+            {
+                '$match': {
+                    'obj.data.doi': str(id)
+                }
+            })
+    query.extend([
+        {
+            '$project': {
+                'a_id': '$subj.data.author_id',
+                'f': '$subj.processed.followers'
+            }
+        }, {
+            '$group': {
+                '_id': '_id',
+                'sum': {
+                    '$sum': '$f'
+                }
+            }
+        }, {
+            '$sort': {
+                'sum': -1
+            }
+        }
+    ])
+    async for r in stats_collection.aggregate(query):
+        result.append(stats_helper(r))
+    return result
