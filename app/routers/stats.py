@@ -19,6 +19,9 @@ from app.daos.stats import (
     get_tweet_author_count,
     get_followers_reached,
     get_tweet_count,
+    get_tweet_count,
+    get_total_score,
+    get_time_count_binned,
 )
 from app.models.stats import (
     ErrorResponseModel,
@@ -146,6 +149,22 @@ async def get_author_count(id: Optional[str] = None):
 @router.get("/tweetcount", response_description="publication data retrieved")
 async def get_count_tweet(id: Optional[str] = None):
     publication = await get_tweet_count(id)
+    if publication:
+        return ResponseModel(publication, "publication data retrieved successfully")
+    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+
+# get sum of scores
+@router.get("/scoresum", response_description="publication data retrieved")
+async def get_summed_score(id: Optional[str] = None):
+    publication = await get_total_score(id)
+    if publication:
+        return ResponseModel(publication, "publication data retrieved successfully")
+    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+
+# get count binned by time
+@router.get("/timebinned", response_description="publication data retrieved")
+async def get_time_binned(id: Optional[str] = None):
+    publication = await get_time_count_binned(id)
     if publication:
         return ResponseModel(publication, "publication data retrieved successfully")
     return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")

@@ -6,7 +6,7 @@
 # this https://github.com/willfong/docker-fastapi-vue
 # not https://developer.ibm.com/recipes/tutorials/a-best-practice-in-dockerizing-vue-js-application/
 
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.6
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
 
 RUN pip install --upgrade pip
 COPY app/requirements.txt app/requirements.txt

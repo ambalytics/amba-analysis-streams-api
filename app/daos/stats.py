@@ -573,6 +573,7 @@ async def get_tweet_author_count(id):
         result.append(stats_helper(r))
     return result
 
+
 # get number of different tweet authors
 async def get_tweet_count(id):
     result = []
@@ -622,6 +623,90 @@ async def get_followers_reached(id):
         }, {
             '$sort': {
                 'sum': -1
+            }
+        }
+    ])
+    async for r in stats_collection.aggregate(query):
+        result.append(stats_helper(r))
+    return result
+
+
+# get average score
+async def get_total_score(id):
+    result = []
+    query = []
+    if id:
+        query.append(
+            {
+                '$match': {
+                    'obj.data.doi': str(id)
+                }
+            })
+    query.extend([
+        {
+            '$project': {
+                'score': '$subj.processed.score'
+            }
+        }, {
+            '$group': {
+                '_id': '_id',
+                'sum': {
+                    '$sum': '$score'
+                }
+            }
+        }, {
+            '$sort': {
+                'sum': -1
+            }
+        }
+    ])
+    async for r in stats_collection.aggregate(query):
+        result.append(stats_helper(r))
+    return result
+
+
+# get tweets binned every 5 minutes
+async def get_time_count_binned(id):
+    result = []
+    query = []
+    if id:
+        query.append(
+            {
+                '$match': {
+                    'obj.data.doi': str(id)
+                }
+            })
+    query.extend([
+        {
+            '$project': {
+                'created_at': {
+                    '$toDate': '$subj.data.created_at'
+                }
+            }
+        }, {
+            '$group': {
+                '_id': {
+                    '$toDate': {
+                        '$subtract': [
+                            {
+                                '$toLong': '$created_at'
+                            }, {
+                                '$mod': [
+                                    {
+                                        '$toLong': '$created_at'
+                                    }, 1000 * 60 * 15
+                                ]
+                            }
+                        ]
+                    }
+                },
+                'count': {
+                    '$sum': 1
+                }
+            }
+        }, {
+            '$sort': {
+                '_id': -1
             }
         }
     ])
