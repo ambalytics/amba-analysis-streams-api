@@ -64,10 +64,6 @@ class WebsocketConsumer(WebSocketEndpoint):
             await self.on_receive(websocket, json.loads(msg.value.decode('utf-8')))
             print("consumed: ", msg.value)
 
-        # self.consumer_task = asyncio.create_task(
-        #     self.send_consumer_message(websocket=websocket, topicname=topicname)
-        # )
-
         print("connected")
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
@@ -80,26 +76,3 @@ class WebsocketConsumer(WebSocketEndpoint):
     async def on_receive(self, websocket: WebSocket, data: typing.Any) -> None:
         print('receive')
         await websocket.send_json({"Message": data})
-
-    async def send_consumer_message(self, websocket: WebSocket, topicname: str) -> None:
-        self.counter = 0
-        print('await msg')
-        while True:
-            data = await consume(self.consumer, topicname)
-            response = ConsumerResponse(topic=topicname, **json.loads(data))
-            print('response')
-            print(response)
-            await websocket.send_text(f"{response.json()}")
-            self.counter = self.counter + 1
-
-
-# @app.get("/app")
-# def root():
-#     with open('/vue/dist/index.html') as f:
-#         logging.warning("errors " + f.errors)
-#         return HTMLResponse(content=f.read(), status_code=200)\
-
-# @app.get("/app")
-# def root():
-#     with open('/vue/dist/index.html') as f:
-#         return HTMLResponse(content=f.read(), status_code=200)
