@@ -50,6 +50,21 @@ async def retrieve_publications():
     return publications
 
 
+# get number of different tweet authors
+async def get_publication_count():
+    result = []
+    query = []
+    query.extend([
+        {
+            '$count': 'count'
+        }
+    ])
+
+    async for r in publication_collection.aggregate(query):
+        result.append(publication_helper(r))
+    return result
+
+
 # Retrieve a publication with a matching ID
 async def retrieve_publication(id):
     logging.warning('retrieve publication ' + id)
