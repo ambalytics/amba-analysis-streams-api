@@ -487,10 +487,6 @@ async def get_country_list(id):
             })
     query.extend([
         {
-            '$sort': {
-                'timestamp': -1
-            }
-        }, {
             '$match': {
                 'subj.processed.location': {
                     '$exists': True
@@ -530,6 +526,7 @@ async def get_country_list(id):
             }
         }
     ])
+    print(query)
 
     async for r in stats_collection.aggregate(query):
         result.append(stats_helper(r))

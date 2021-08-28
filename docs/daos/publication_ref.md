@@ -66,23 +66,15 @@ async def top_publications(limit=10):
             '$project': {
                 'doi': '$obj.data.doi',
                 'score': '$subj.processed.score',
+                'words': '$subj.processed.words',
                 'contains_abstract': '$subj.processed.contains_abstract',
                 'bot_rating': '$subj.processed.bot_rating',
                 'question_mark_count': '$subj.processed.question_mark_count',
                 'exclamation_mark_count': '$subj.processed.exclamation_mark_count',
-                'hashtags': {
-                    '$cond': {
-                        'if': {
-                            '$isArray': '$subj.processed.hashtags'
-                        },
-                        'then': {
-                            '$size': '$subj.processed.hashtags'
-                        },
-                        'else': '0'
-                    }
-                },
-                'length': '$subj.processed.length',
-                'followers': '$subj.processed.followers'
+                'hashtags': '$subj.processed.hashtags',
+                'annotations': '$subj.processed.annotations',
+                'a_types': '$subj.processed.a_types',
+                'length': '$subj.processed.length'
             }
         }, {
             '$group': {
@@ -108,12 +100,18 @@ async def top_publications(limit=10):
                 'bot_rating': {
                     '$sum': '$bot_rating'
                 },
-                'hashtags': {
-                    '$sum': '$hashtags'
+                'words': {
+                    '$push': '$words'
                 },
-                'followers': {
-                    '$sum': '$followers'
-                  }
+                'hashtags': {
+                    '$addToSet': '$hashtags'
+                },
+                'annotations': {
+                    '$addToSet': '$annotations'
+                },
+                'a_types': {
+                    '$addToSet': '$a_types'
+                }
             }
         }, {
             '$project': {
@@ -137,8 +135,50 @@ async def top_publications(limit=10):
                         '$bot_rating', '$count'
                     ]
                 },
-                'followers': 1,
-                'hashtags': 1,
+                'words': {
+                    '$reduce': {
+                        'input': '$words',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                },
+                'hashtags': {
+                    '$reduce': {
+                        'input': '$hashtags',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                },
+                'annotations': {
+                    '$reduce': {
+                        'input': '$annotations',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                },
+                'a_types': {
+                    '$reduce': {
+                        'input': '$a_types',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
+                    }
+                }
             }
         }, {
             '$sort': {
