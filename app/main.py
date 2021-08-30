@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 import typing
 from fastapi import FastAPI
@@ -14,7 +15,7 @@ from starlette.endpoints import WebSocketEndpoint
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse, JSONResponse, HTMLResponse
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketDisconnect
 from aiokafka import AIOKafkaConsumer
 import asyncio
 
@@ -44,21 +45,69 @@ app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publica
 app.include_router(EventRouter, tags=["Event"], prefix="/api/event")
 app.include_router(StatsRouter, tags=["Stats"], prefix="/api/stats")
 
+
+# class ConnectionManager:
+#     consumer = None
+#     last_message = {'None'}
+#
+#     def __init__(self):
+#         self.active_connections: typing.List[WebSocket] = []
+#
+#     async def connect(self, websocket: WebSocket):
+#         print('connect')
+#         await websocket.accept()
+#         self.active_connections.append(websocket)
+#         if not self.consumer:
+#             loop = asyncio.get_event_loop()
+#             bootstrap_servers = os.environ['KAFKA_BOOTRSTRAP_SERVER']
+#             topicname = 'events_aggregated'
+#             self.consumer = AIOKafkaConsumer(
+#                 topicname,
+#                 loop=loop,
+#                 bootstrap_servers=bootstrap_servers,
+#                 enable_auto_commit=False,
+#             )
+#             await self.consumer.start()
+#
+#             async for msg in self.consumer:
+#                 await self.broadcast(json.loads(msg.value.decode('utf-8')))
+#
+#     async def disconnect(self, websocket: WebSocket):
+#         self.active_connections.remove(websocket)
+#         await self.consumer.stop()
+#         self.consumer = None
+#
+#     async def broadcast(self, message: str):
+#         self.last_message = message
+#         print('broadcast')
+#         for connection in self.active_connections:
+#             try:
+#                 await connection.send_json({"Message": message})
+#             except WebSocketDisconnect:
+#                 await self.disconnect(connection)
+#
+#
+# manager = ConnectionManager()
+
+
+# await manager.connect(websocket)
+
 @app.websocket_route("/live")
 class WebsocketConsumer(WebSocketEndpoint):
     async def on_connect(self, websocket: WebSocket) -> None:
 
         topicname = 'events_aggregated'
+        bootstrap_servers = os.environ['KAFKA_BOOTRSTRAP_SERVER']
 
         await websocket.accept()
-        await websocket.send_json({"Message": "connected"})
 
         loop = asyncio.get_event_loop()
         self.consumer = AIOKafkaConsumer(
             topicname,
             loop=loop,
-            bootstrap_servers='kafka:9092',
+            bootstrap_servers=bootstrap_servers,
             enable_auto_commit=False,
+            auto_offset_reset="latest",
         )
 
         await self.consumer.start()

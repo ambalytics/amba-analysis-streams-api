@@ -1,4 +1,6 @@
+import logging
 from typing import Optional
+from urllib.parse import unquote
 
 from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
@@ -39,7 +41,9 @@ async def get_publications_count():
 # todo use doi, regex? start with 1
 @router.get("/get/{s}/{p}", response_description="publication data retrieved")
 async def get_publication_data(s, p):
-    publication = await retrieve_publication(s + '/' + p)
+    pd = unquote(p)
+    logging.warning('retrieve publication ' + s + '/' + pd)
+    publication = await retrieve_publication(s + '/' + pd)
     if publication:
         return ResponseModel(publication, "publication data retrieved successfully")
     return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
