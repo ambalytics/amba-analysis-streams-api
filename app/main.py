@@ -97,7 +97,7 @@ class WebsocketConsumer(WebSocketEndpoint):
     async def on_connect(self, websocket: WebSocket) -> None:
 
         topicname = 'events_aggregated'
-        bootstrap_servers = os.environ['KAFKA_BOOTRSTRAP_SERVER']
+        bootstrap_servers = os.environ.get('KAFKA_BOOTRSTRAP_SERVER', 'kafka:9092')
 
         await websocket.accept()
 
