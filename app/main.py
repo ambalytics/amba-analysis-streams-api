@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers.event import router as EventRouter
+from app.routers.discussionData import router as DiscussionDataRouter
 from app.routers.publication import router as PublicationRouter
 from app.routers.stats import router as StatsRouter
 from starlette.endpoints import WebSocketEndpoint
@@ -42,9 +42,17 @@ app.add_middleware(
 # app.mount("/static", StaticFiles(directory="/vue/dist"), name="static")
 
 app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publication")
-app.include_router(EventRouter, tags=["Event"], prefix="/api/event")
+app.include_router(DiscussionDataRouter, tags=["DiscussionData"], prefix="/api/discussionData")
 app.include_router(StatsRouter, tags=["Stats"], prefix="/api/stats")
 
+
+# Dependency
+def get_db():
+    try:
+        db = SessionLocal()
+        yield db
+    finally:
+        db.close()
 
 # class ConnectionManager:
 #     consumer = None
@@ -90,7 +98,8 @@ app.include_router(StatsRouter, tags=["Stats"], prefix="/api/stats")
 # manager = ConnectionManager()
 
 
-# await manager.connect(websocket)
+
+
 
 @app.websocket_route("/live")
 class WebsocketConsumer(WebSocketEndpoint):

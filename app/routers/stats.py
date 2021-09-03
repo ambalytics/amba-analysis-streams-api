@@ -1,170 +1,136 @@
-import logging
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session  # type: ignore
 
+from app.daos.database import SessionLocal, engine
 from app.daos.stats import (
+    get_followers_reached,
+    get_top_lang,
     get_words,
-    count_publications,
-    group_count_publications,
     get_types,
     get_sources,
-    get_top_lang,
-    get_top_authors,
     get_top_entities,
     get_top_hashtags,
     get_tweet_time_of_day,
-    get_country_list,
+    get_tweet_count,
     get_tweet_author_count,
-    get_followers_reached,
-    get_tweet_count,
-    get_tweet_count,
     get_total_score,
+    get_country_list,
     get_time_count_binned,
 )
-from app.models.stats import (
-    ErrorResponseModel,
-    ResponseModel,
-    StatsSchema,
-)
+import event_stream.models.model as models
+from starlette.responses import JSONResponse
 
+models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
 
 
+def get_session():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
 @router.get("/words", response_description="count retrieved")
-async def get_t_words(id):
-    publications = await get_words(id)
-    if publications:
-        return ResponseModel(publications, "event data retrieved successfully")
-    return ResponseModel(publications, "Empty list returned")
+def get_t_words(id, session: Session = Depends(get_session)):
+    item = get_words(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
-@router.get("/count", response_description="count retrieved")
-async def get_count():
-    count = await count_publications()
-    if count:
-        return ResponseModel(count, "publications data retrieved successfully")
-    return ResponseModel(count, "Empty list returned")
+@router.get("/types", response_description="item data retrieved")
+def get_item_types(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_types(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
-@router.get("/group/count", response_description="count retrieved")
-async def get_group_count(field, limit):
-    publications = await group_count_publications(field, limit)
-    if publications:
-        return ResponseModel(publications, "publications data retrieved successfully")
-    return ResponseModel(publications, "Empty list returned")
-
-
-# todo move this to own statistics
-
-@router.get("/types", response_description="publication data retrieved")
-async def get_publication_types(id: Optional[str] = None):
-    publication = await get_types(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
-
-
-@router.get("/sources", response_description="publication data retrieved")
-async def get_publication_sources(id: Optional[str] = None):
-    publication = await get_sources(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
-
-
-# tweet author data!
-@router.get("/authors", response_description="publication data retrieved")
-async def get_publication_authors(id: Optional[str] = None, original: Optional[bool] = False):
-    publication = await get_top_authors(id, original)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/sources", response_description="item data retrieved")
+def get_item_sources(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_sources(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # tweet author languages
-@router.get("/lang", response_description="publication data retrieved")
-async def get_publication_lang(id: Optional[str] = None):
-    publication = await get_top_lang(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/lang", response_description="item data retrieved")
+def get_item_lang(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_top_lang(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # tweet author entities
-@router.get("/entities", response_description="publication data retrieved")
-async def get_publication_entities(id: Optional[str] = None):
-    publication = await get_top_entities(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/entities", response_description="item data retrieved")
+def get_item_entities(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_top_entities(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # tweet author hashtags
-@router.get("/hashtags", response_description="publication data retrieved")
-async def get_publication_hashtags(id: Optional[str] = None):
-    publication = await get_top_hashtags(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/hashtags", response_description="item data retrieved")
+def get_item_hashtags(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_top_hashtags(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # get hour binned periodic count
-@router.get("/dayhour", response_description="publication data retrieved")
-async def get_publication_dayhour(id: Optional[str] = None):
-    publication = await get_tweet_time_of_day(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/dayhour", response_description="item data retrieved")
+def get_item_dayhour(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_tweet_time_of_day(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # get author locations
-@router.get("/locations", response_description="publication data retrieved")
-async def get_country_locations(id: Optional[str] = None):
-    publication = await get_country_list(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/locations", response_description="item data retrieved")
+def get_country_locations(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_country_list(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # get total followers reached
-@router.get("/followers", response_description="publication data retrieved")
-async def get_followers(id: Optional[str] = None):
-    publication = await get_followers_reached(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/followers", response_description="item data retrieved")
+def get_followers(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_followers_reached(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # get author count
-@router.get("/authorcount", response_description="publication data retrieved")
-async def get_author_count(id: Optional[str] = None):
-    publication = await get_tweet_author_count(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/authorcount", response_description="item data retrieved")
+def get_author_count(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_tweet_author_count(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
+
 
 # get author count
-@router.get("/tweetcount", response_description="publication data retrieved")
-async def get_count_tweet(id: Optional[str] = None):
-    publication = await get_tweet_count(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/tweetcount", response_description="item data retrieved")
+def get_count_tweet(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_tweet_count(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
+
 
 # get sum of scores
-@router.get("/scoresum", response_description="publication data retrieved")
-async def get_summed_score(id: Optional[str] = None):
-    publication = await get_total_score(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/scoresum", response_description="item data retrieved")
+def get_summed_score(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_total_score(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
+
 
 # get count binned by time
-@router.get("/timebinned", response_description="publication data retrieved")
-async def get_time_binned(id: Optional[str] = None):
-    publication = await get_time_count_binned(id)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+@router.get("/timebinned", response_description="item data retrieved")
+def get_time_binned(id: Optional[str] = None, session: Session = Depends(get_session)):
+    item = get_time_count_binned(session, id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)

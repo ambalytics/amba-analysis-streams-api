@@ -1,5 +1,5 @@
 amba-event-stream
 pydantic[email]
-motor
 aiofiles
 aiokafka
+sqlalchemy

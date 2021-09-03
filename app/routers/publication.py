@@ -1,65 +1,62 @@
 import logging
-from typing import Optional
+from typing import List
 from urllib.parse import unquote
 
-from fastapi import APIRouter, Body
+from app.models.schema import StatValue, Publication, TimeValue
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session  # type: ignore
 
+from app.daos.database import SessionLocal, engine
 from app.daos.publication import (
-    retrieve_publication,
-    retrieve_publications,
-    top_publications,
-    twitter_data_publication,
     get_publication_count,
+    retrieve_publication,
+    get_publications_db,
+    top_publications,
 )
-from app.models.publication import (
-    ErrorResponseModel,
-    ResponseModel,
-    PublicationSchema,
-    UpdatePublicationModel,
-)
+import event_stream.models.model as models
+from starlette.responses import JSONResponse
 
+models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
 
 
-@router.get("/", response_description="publications retrieved")
-async def get_publications():
-    publications = await retrieve_publications()
-    if publications:
-        return ResponseModel(publications, "publications data retrieved successfully")
-    return ResponseModel(publications, "Empty list returned")
+def get_session():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
-@router.get("/count", response_description="publications retrieved")
-async def get_publications_count():
-    publications = await get_publication_count()
-    if publications:
-        return ResponseModel(publications, "publications count retrieved successfully")
-    return ResponseModel(publications, "Empty list returned")
+@router.get("/", response_model=List[Publication])
+def get_publications(
+        offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc', session: Session = Depends(get_session)
+):
+    publications = get_publications_db(session=session, offset=offset, limit=limit, sort=sort, order=order)
+    return publications
 
 
-# todo use doi, regex? start with 1
-@router.get("/get/{s}/{p}", response_description="publication data retrieved")
-async def get_publication_data(s, p):
+@router.get("/count", response_model=StatValue)
+def get_publications_count(session: Session = Depends(get_session)):
+    item = get_publication_count(session=session)[0]
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
+
+
+# # todo use doi, regex? start with 1 ,  response_model=Publication
+@router.get("/get/{s}/{p}")
+def get_publication_data(s, p, session: Session = Depends(get_session)):
     pd = unquote(p)
     logging.warning('retrieve publication ' + s + '/' + pd)
-    publication = await retrieve_publication(s + '/' + pd)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
+    publication = retrieve_publication(session, s + '/' + pd)
+    logging.warning(publication)
+    json_compatible_item_data = jsonable_encoder(publication)
+    return JSONResponse(content=json_compatible_item_data)
 
 
-@router.get("/twitter/{s}/{p}", response_description="publication data retrieved")
-async def get_twitter_publication_data(s, p):
-    publication = await twitter_data_publication(s + '/' + p)
-    if publication:
-        return ResponseModel(publication, "publication data retrieved successfully")
-    return ErrorResponseModel("An error occurred.", 404, "publication doesn't exist.")
-
-
-@router.get("/top", response_description="top retrieved")
-async def get_top(limit):
-    publications = await top_publications(limit)
-    if publications:
-        return ResponseModel(publications, "publications data retrieved successfully")
-    return ResponseModel(publications, "Empty list returned")
+@router.get("/top")
+def get_top(limit: int = 20, session: Session = Depends(get_session)):
+    publications = top_publications(session, limit)
+    json_compatible_item_data = jsonable_encoder(publications)
+    return JSONResponse(content=json_compatible_item_data)
