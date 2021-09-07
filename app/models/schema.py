@@ -1,7 +1,7 @@
 from enum import Enum
 import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
 
 
 class PublicationType(str, Enum):
@@ -169,3 +169,15 @@ class TimeValue(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class AggregatedData(BaseModel):
+    id: int
+    publicationDoi: Optional[str]
+    score: Optional[float]
+
+
+class DebugData(BaseModel):
+    id: int
+    info: Optional[str]
+    data: Optional[Json]
