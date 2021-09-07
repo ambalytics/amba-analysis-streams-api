@@ -60,7 +60,8 @@ class ConnectionManager:
             logging.warning('create consumer')
             await self.create()
         self.active_connections.append(websocket)
-        await websocket.send_json({"Message": self.last_message})
+        if ConnectionManager.is_jsonable(self.last_message):
+            await websocket.send_json({"Message": self.last_message})
 
     async def disconnect(self, websocket: WebSocket):
         logging.warning('remove connection')
@@ -72,9 +73,18 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 # logging.warning('broadcast to connection')
-                await connection.send_json({"Message": message})
+                if ConnectionManager.is_jsonable(message):
+                    await connection.send_json({"Message": message})
             except WebSocketDisconnect:
                 await self.disconnect(connection)
+
+    @staticmethod
+    def is_jsonable(x):
+        try:
+            json.dumps(x)
+            return True
+        except (TypeError, OverflowError):
+            return False
 
     async def create(self):
         topicname = 'events_aggregated'
