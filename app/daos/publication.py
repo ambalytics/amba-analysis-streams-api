@@ -39,10 +39,17 @@ def retrieve_publication(session: Session, doi):
     f = f.bindparams(bindparam('doi'))
     fos = session.execute(f, params).fetchall()
 
+    s = text("""SELECT id, title, url, license FROM "PublicationSource" as p
+                JOIN "Source" as a on (a.id = p."sourceId")
+                WHERE p."publicationDoi"=:doi""")
+    s = s.bindparams(bindparam('doi'))
+    sources = session.execute(s, params).fetchall()
+
     return {
         'publication': pub,
         'authors': authors,
-        'fieldsOfStudy': fos
+        'fieldsOfStudy': fos,
+        'sources': sources,
     }
 
 

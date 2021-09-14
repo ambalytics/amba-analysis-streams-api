@@ -45,11 +45,11 @@ def get_publications_count(session: Session = Depends(get_session)):
 
 
 # # todo use doi, regex? start with 1 ,  response_model=Publication
-@router.get("/get/{s}/{p}")
-def get_publication_data(s, p, session: Session = Depends(get_session)):
-    pd = unquote(p)
-    logging.warning('retrieve publication ' + s + '/' + pd)
-    publication = retrieve_publication(session, s + '/' + pd)
+@router.get("/get")
+def get_publication_data(doi: str, session: Session = Depends(get_session)):
+    logging.warning('retrieve publication ' + doi)
+    logging.warning('retrieve publication ' + unquote(doi))
+    publication = retrieve_publication(session, doi)
     logging.warning(publication)
     json_compatible_item_data = jsonable_encoder(publication)
     return JSONResponse(content=json_compatible_item_data)

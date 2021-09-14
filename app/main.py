@@ -40,11 +40,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.mount("/static", StaticFiles(directory="/vue/dist"), name="static")
 
 app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publication")
 app.include_router(DiscussionDataRouter, tags=["DiscussionData"], prefix="/api/discussionData")
 app.include_router(StatsRouter, tags=["Stats"], prefix="/api/stats")
+
+
+@app.get("/available", response_description="available")
+def is_api_available():
+    return JSONResponse(content=True)
 
 
 class ConnectionManager:
