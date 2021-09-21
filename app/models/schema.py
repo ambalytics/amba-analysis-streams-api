@@ -21,13 +21,29 @@ class Publication(BaseModel):
     id: int
     doi: str
     type: Optional[PublicationType]
-    pubDate: Optional[str]
+    pub_date: Optional[str]
     year: Optional[int]
     publisher: Optional[str]
-    citationCount: Optional[int]
+    citation_count: Optional[int]
     title: Optional[str]
-    normalizedTitle: Optional[str]
+    normalized_title: Optional[str]
     abstract: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class PublicationCitation(BaseModel):
+    publication_doi: str
+    citation_doi: str
+
+    class Config:
+        orm_mode = True
+
+
+class PublicationReference(BaseModel):
+    publication_doi: str
+    reference_doi: str
 
     class Config:
         orm_mode = True
@@ -43,11 +59,9 @@ class Source(BaseModel):
         orm_mode = True
 
 
-class FieldOfStudy(BaseModel):
-    id: int
-    name: Optional[str]
-    normalizedName: Optional[str]
-    level: Optional[int]
+class PublicationSource(BaseModel):
+    publication_doi: str
+    source_id: int
 
     class Config:
         orm_mode = True
@@ -56,59 +70,41 @@ class FieldOfStudy(BaseModel):
 class Author(BaseModel):
     id: int
     name: Optional[str]
-    normalizedName: Optional[str]
+    normalized_name: Optional[str]
 
     class Config:
         orm_mode = True
 
 
-class PublicationCitation(BaseModel):
-    publicationDoi: str
-    citationId: str
+class PublicationAuthor(BaseModel):
+    publication_doi: str
+    author_id: int
+
+    class Config:
+        orm_mode = True
 
 
-class PublicationReference(BaseModel):
-    publicationDoi: str
-    referenceId: str
+class FieldOfStudy(BaseModel):
+    id: int
+    name: Optional[str]
+    normalized_name: Optional[str]
+    level: Optional[int]
+
+    class Config:
+        orm_mode = True
 
 
 class PublicationFieldOfStudy(BaseModel):
-    publicationDoi: str
-    fieldOfStudyId: int
+    publication_doi: str
+    field_of_study_id: int
+
+    class Config:
+        orm_mode = True
 
 
-class PublicationAuthor(BaseModel):
-    publicationDoi: str
-    authorId: int
-
-
-class PublicationSource(BaseModel):
-    publicationDoi: str
-    sourceId: int
-
-
-class DiscussionData(BaseModel):
-    id: int
-    publicationDoi: Optional[str]
-    createdAt: Optional[datetime.datetime]
-    score: Optional[float]
-    timeScore: Optional[float]
-    typeScore: Optional[float]
-    userScore: Optional[float]
-    language: Optional[str]
-    source: Optional[str]
-    abstractDifference: Optional[float]
-    length: Optional[int]
-    questions: Optional[int]
-    exclamations: Optional[int]
-    type: Optional[str]
-    sentiment: Optional[float]
-    subjId: Optional[int]
-    followers: Optional[int]
-    botScore: Optional[float]
-    authorName: Optional[str]
-    authorLocation: Optional[str]
-    sourceId: Optional[str]
+class FieldOfStudyChildren(BaseModel):
+    field_of_study_id: int
+    child_field_of_study_id: int
 
     class Config:
         orm_mode = True
@@ -118,41 +114,151 @@ class DiscussionEntity(BaseModel):
     id: int
     entity: Optional[str]
 
+    class Config:
+        orm_mode = True
+
+
+class DiscussionEntityData(BaseModel):
+    publication_doi: str
+    discussion_entity_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
+
 
 class DiscussionHashtag(BaseModel):
     id: int
     hashtag: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionHashtagData(BaseModel):
+    publication_doi: str
+    discussion_hashtag_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
 
 
 class DiscussionWord(BaseModel):
     id: int
     word: Optional[str]
 
-
-class DiscussionAuthor(BaseModel):
-    id: int
-    name: Optional[str]
-
-
-class DiscussionEntityData(BaseModel):
-    discussionDataId: int
-    discussionEntityId: int
-
-
-class DiscussionAuthorData(BaseModel):
-    discussionDataId: int
-    discussionAuthorId: int
+    class Config:
+        orm_mode = True
 
 
 class DiscussionWordData(BaseModel):
-    discussionDataId: int
-    discussionWordId: int
+    publication_doi: str
+    discussion_word_id: int
     count: Optional[int]
 
+    class Config:
+        orm_mode = True
 
-class DiscussionHashtagData(BaseModel):
-    discussionDataId: int
-    discussionHashtagId: int
+class DiscussionLocation(BaseModel):
+
+    id: int
+    location: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionLocationData(BaseModel):
+
+    publication_doi: str
+    discussion_location_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionAuthor(BaseModel):
+
+    id: int
+    author: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionAuthorData(BaseModel):
+
+    publication_doi: str
+    discussion_author_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionLang(BaseModel):
+
+    id: int
+    lang: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+class DiscussionLangData(BaseModel):
+
+    publication_doi: str
+    discussion_lang_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionType(BaseModel):
+
+    id: int
+    type: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionTypeData(BaseModel):
+
+    publication_doi: str
+    discussion_type_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+class Trending(BaseModel):
+    id: int
+    publication_doi: Optional[str]
+    duration: Optional[int]
+    score: Optional[float]
+    count: Optional[int]
+    median_sentiment: Optional[float]
+    sum_follower: Optional[int]
+    abstract_difference: Optional[float]
+    tweet_author_diversity: Optional[float]
+    hashtag_diversity: Optional[float]
+    words_diversity: Optional[float]
+    lan_diversity: Optional[float]
+    location_diversity: Optional[float]
+    median_age: Optional[float]
+    median_length: Optional[float]
+    avg_questions: Optional[float]
+    avg_exclamations: Optional[float]
+    bot_percentage: Optional[float]
+    projected_change: Optional[float]
+    is_trending: Optional[bool]
+
+    class Config:
+        orm_mode = True
 
 
 class StatValue(BaseModel):
@@ -170,14 +276,3 @@ class TimeValue(BaseModel):
     class Config:
         orm_mode = True
 
-
-class AggregatedData(BaseModel):
-    id: int
-    publicationDoi: Optional[str]
-    score: Optional[float]
-
-
-class DebugData(BaseModel):
-    id: int
-    info: Optional[str]
-    data: Optional[Json]

@@ -8,62 +8,160 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 
-def get_publications_db(session: Session, offset: int = 0, limit: int = 100, sort: str = 'id', order: str = 'asc') -> List[Publication]:
-    if order != 'asc':
-        order_by = desc(text(sort))
+def query_bottom(session, q, qs, qb, order, limit, offset, search):
+    # only allow set string to avoid sql injection
+    order_sql = ' ASC '
+    if order == 'desc':
+        order_sql = ' DESC '
+    qb += order_sql
+
+    qb += """
+        LIMIT :limit OFFSET :offset
+    """
+
+    params = {'limit': limit, 'offset': offset}
+    if len(search) > 3:
+        params['search'] = '%' + search + '%'
+        q += qs
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('limit'), bindparam('offset'), bindparam('search'))
     else:
-        order_by = asc(text(sort))
-    return session.query(Publication).order_by(order_by).offset(offset).limit(limit).all()
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('limit'), bindparam('offset'))
+    return session.execute(s, params).fetchall()
 
 
-# count all different publications
-def get_publication_count(session: Session):
-    s = text('SELECT COUNT(*) FROM (SELECT DISTINCT "publicationDoi" FROM "DiscussionData") AS temp;')
-    return session.execute(s).fetchall()
+def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc',
+                     search: str = ''):
+    q = """
+        SELECT p.*, array_agg(a.id || ': ' || a.name), array_agg(fos.id || ': ' || fos.name) FROM publication p
+            JOIN publication_author pa on p.doi = pa.publication_doi
+            JOIN author as a on pa.author_id = a.id
+            JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
+            JOIN field_of_study fos on pfos.field_of_study_id = fos.id
+    """
+
+    qs = """
+        WHERE p.title ILIKE :search
+    """
+
+    qb = ' GROUP BY p.id '
+    sortable = ['id']
+    if sort in sortable:
+        if sort == 'id':
+            qb += ' ORDER BY  '
+            qb += 'p.id '
+    else:
+        qb += ' ORDER BY  '
+        qb += 'p.id '
+    return query_bottom(session, q, qs, qb, order, limit, offset, search)
+
+
+def get_trending_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
+                              order: str = 'desc', duration: int = 3600, search: str = ''):
+    q = """
+        SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
+        JOIN publication p on p.doi = t.publication_doi
+        WHERE duration = :duration
+        """
+
+    qs = """
+        AND p.title ILIKE :search
+    """
+
+    sortable = ['score', 'count', 'median_sentiment', 'sum_follower', 'abstract_difference', 'tweet_author_diversity',
+                'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
+                'avg_exclamations', 'projected_change']
+
+    qb = ' ORDER BY  '
+    if sort in sortable:
+        qb += sort + ' '
+    else:
+        qb += 'score '
+
+    order_sql = ' ASC '
+    if order == 'desc':
+        order_sql = ' DESC '
+    qb += order_sql
+
+    qb += """
+            LIMIT :limit OFFSET :offset
+        """
+
+    params = {'duration': duration, 'limit': limit, 'offset': offset}
+    if len(search) > 3:
+        params['search'] = '%' + search + '%'
+        q += qs
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('search'))
+    else:
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'))
+    return session.execute(s, params).fetchall()
 
 
 def retrieve_publication(session: Session, doi):
     # todo check security
     pub = session.query(Publication).filter_by(doi=doi).all()
-    a = text("""SELECT name FROM "PublicationAuthor" as p
-                JOIN "Author" as a on (a.id = p."authorId")
-                WHERE p."publicationDoi"=:doi""")
+    a = text("""SELECT name FROM publication_author as p
+                JOIN author as a on (a.id = p.author_id)
+                WHERE p.publication_doi=:doi""")
 
     params = {'doi': doi, }
     a = a.bindparams(bindparam('doi'))
     authors = session.execute(a, params).fetchall()
 
-    f = text("""SELECT name FROM "PublicationFieldOfStudy" as p
-                JOIN "FieldOfStudy" as a on (a.id = p."fieldOfStudyId")
-                WHERE p."publicationDoi"=:doi""")
+    f = text("""SELECT name FROM publication_field_of_study as p
+                JOIN field_of_study as a on (a.id = p.field_of_study_id)
+                WHERE p.publication_doi=:doi""")
     f = f.bindparams(bindparam('doi'))
     fos = session.execute(f, params).fetchall()
 
-    s = text("""SELECT id, title, url, license FROM "PublicationSource" as p
-                JOIN "Source" as a on (a.id = p."sourceId")
-                WHERE p."publicationDoi"=:doi""")
+    s = text("""SELECT id, title, url, license FROM publication_source as p
+                JOIN source as a on (a.id = p.source_id)
+                WHERE p.publication_doi=:doi""")
     s = s.bindparams(bindparam('doi'))
     sources = session.execute(s, params).fetchall()
 
     return {
         'publication': pub,
         'authors': authors,
-        'fieldsOfStudy': fos,
+        'fields_of_study': fos,
         'sources': sources,
     }
 
 
-def top_publications(session: Session, limit: int = 20):
-    s = text("""SELECT
-                      COUNT(d."id") as count, SUM(d."score") as score, SUM(d."questions") as question_mark_count,
-                      SUM(d."exclamations") as exclamation_mark_count, SUM(d."followers") as followers,
-                      AVG(d."length") as length_avg, AVG(d."abstractDifference") as contains_abstract_avg,
-                      AVG(d."botScore") as bot_rating_avg, p.*
-                        FROM "Publication" as p
-                        JOIN "DiscussionData" as d ON (d."publicationDoi" = p."doi")
-                        GROUP BY p."id"
-                        ORDER BY score DESC
+def get_trending_publication2s(session: Session, limit: int = 20):
+    s = text("""
+        SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
+        JOIN publication p on p.doi = t.publication_doi
+        ORDER BY score DESC
                         LIMIT :limit""")
     params = {'limit': limit, }
     s = s.bindparams(bindparam('limit'))
     return session.execute(s, params).fetchall()
+
+    trending_publications = """
+    SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
+    JOIN publication p on p.doi = t.publication_doi
+    ORDER BY score DESC
+    LIMIT 10
+    """
+
+    authors_with_publications = """
+    SELECT * FROM author a
+     JOIN publication_author pa on pa.author_id = a.id
+     JOIN publication p on p.doi = pa.publication_doi
+    LIMIT 10
+    """
+
+    fos_with_publications = """
+    SELECT * FROM field_of_study fos
+     JOIN publication_field_of_study pfos on pfos.field_of_study_id = fos.id
+     JOIN publication p on p.doi = pfos.publication_doi
+    LIMIT 10
+    """

@@ -9,10 +9,9 @@ from sqlalchemy.orm import Session  # type: ignore
 
 from app.daos.database import SessionLocal, engine
 from app.daos.publication import (
-    get_publication_count,
     retrieve_publication,
-    get_publications_db,
-    top_publications,
+    get_publications,
+    get_trending_publications,
 )
 import event_stream.models.model as models
 from starlette.responses import JSONResponse
@@ -30,18 +29,29 @@ def get_session():
 
 
 @router.get("/", response_model=List[Publication])
-def get_publications(
-        offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc', session: Session = Depends(get_session)
+def get_publications_router(
+        offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc', search: str = '',
+        session: Session = Depends(get_session)
 ):
-    publications = get_publications_db(session=session, offset=offset, limit=limit, sort=sort, order=order)
+    publications = get_publications(session=session, offset=offset, limit=limit, sort=sort, order=order, search=search)
     return publications
 
 
-@router.get("/count", response_model=StatValue)
-def get_publications_count(session: Session = Depends(get_session)):
-    item = get_publication_count(session=session)[0]
+@router.get("/trending")
+def get_trending_publications_router(
+        offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'desc', search: str = '',
+        session: Session = Depends(get_session)
+):
+    item = get_trending_publications(session=session, offset=offset, limit=limit, sort=sort, order=order, search=search)
     json_compatible_item_data = jsonable_encoder(item)
     return JSONResponse(content=json_compatible_item_data)
+
+
+# @router.get("/count", response_model=StatValue)
+# def get_publications_count(session: Session = Depends(get_session)):
+#     item = get_publication_count(session=session)[0]
+#     json_compatible_item_data = jsonable_encoder(item)
+#     return JSONResponse(content=json_compatible_item_data)
 
 
 # # todo use doi, regex? start with 1 ,  response_model=Publication
@@ -52,11 +62,4 @@ def get_publication_data(doi: str, session: Session = Depends(get_session)):
     publication = retrieve_publication(session, doi)
     logging.warning(publication)
     json_compatible_item_data = jsonable_encoder(publication)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-@router.get("/top")
-def get_top(limit: int = 20, session: Session = Depends(get_session)):
-    publications = top_publications(session, limit)
-    json_compatible_item_data = jsonable_encoder(publications)
     return JSONResponse(content=json_compatible_item_data)
