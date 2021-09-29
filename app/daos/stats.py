@@ -82,9 +82,10 @@ def get_words(session: Session, doi, limit: int = 100, **kwargs):
     return session.execute(s, params).fetchall()
 
 
-def get_top_lang(query_api, doi):
+def get_top_lang(query_api, doi, limit: int = 10, min_percentage: float = 1):
     params = {
         '_start': timedelta(days=-30),
+        '_limit': limit
     }
 
     if doi:
@@ -101,6 +102,7 @@ def get_top_lang(query_api, doi):
               |> count()
               |> group()
               |> sort(desc: true)
+              |> limit(n: _limit)
               |> rename(columns: {_value: "count"})
               |> rename(columns: {language: "value"})
         """
@@ -116,15 +118,26 @@ def get_top_lang(query_api, doi):
               |> count()
               |> group()
               |> sort(desc: true)
+              |> limit(n:_limit)          
               |> rename(columns: {_value: "count"})
               |> rename(columns: {language: "value"})
         """
     print(params)
+
     tables = query_api.query(query, params=params)
-    results = []
+    temp_results = []
+    total = 0
     for table in tables:
         for record in table.records:
-            results.append({'value': record['value'], 'count': record['count']})
+            temp_results.append({'value': record['value'], 'count': record['count']})
+            total += record['count']
+
+    results = []
+    for r in temp_results:
+        r['percentage'] = r['count'] / total
+        if r['percentage'] > min_percentage:
+            results.append(r)
+
     return results
 
 
@@ -480,18 +493,21 @@ def get_time_count_binned(query_api, doi):
 
 
 # get hour binned periodic count
-# def get_tweet_time_of_day(session: Session, doi):
-#     query = """SELECT COUNT(*) / COUNT(distinct DATE("createdAt")) as count,
-#                 date_part('hour', "createdAt") AS "value" FROM "DiscussionData"
-#                 """
-#     if doi:
-#         query += ' WHERE publication_doi=:doi GROUP BY "value"'
-#         params = {'doi': doi, }
-#         s = text(query)
-#         s = s.bindparams(bindparam('doi'))
-#         return session.execute(s, params).fetchall()
-#     s = text(query + 'GROUP BY "value"')
-#     return session.execute(s).fetchall()
+def get_tweet_time_of_day(session: Session, doi):
+    query = """
+    import "strings"
+        from(bucket: "trending")
+          |> range(start: _start)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+          |> filter(fn: (r) => r["_field"] == "score")
+          |> group()
+          |> aggregateWindow(every: 1h, fn: count, createEmpty: true)
+          |> map(fn:(r) => ({ r with t: strings.substring(v: string(v: r._time),  start: 11, end: 13) }))
+          |> group(columns: ["t"])
+          |> sum()
+          |> group()
+                """
+
 
 
 def fetch_with_doi_filter(session: Session, query, doi):

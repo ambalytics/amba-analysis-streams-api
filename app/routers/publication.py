@@ -7,11 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session  # type: ignore
 
+from app.daos.database import SessionLocal, engine, query_api
 from app.daos.database import SessionLocal, engine
 from app.daos.publication import (
     retrieve_publication,
     get_publications,
     get_trending_publications,
+    get_count
 )
 import event_stream.models.model as models
 from starlette.responses import JSONResponse
@@ -47,11 +49,11 @@ def get_trending_publications_router(
     return JSONResponse(content=json_compatible_item_data)
 
 
-# @router.get("/count", response_model=StatValue)
-# def get_publications_count(session: Session = Depends(get_session)):
-#     item = get_publication_count(session=session)[0]
-#     json_compatible_item_data = jsonable_encoder(item)
-#     return JSONResponse(content=json_compatible_item_data)
+@router.get("/count", response_model=StatValue)
+def get_publications_count(session: Session = Depends(get_session)):
+    item = get_count(query_api)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
 
 
 # # todo use doi, regex? start with 1 ,  response_model=Publication

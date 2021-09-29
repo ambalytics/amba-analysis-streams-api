@@ -160,8 +160,8 @@ class DiscussionWordData(BaseModel):
     class Config:
         orm_mode = True
 
-class DiscussionLocation(BaseModel):
 
+class DiscussionLocation(BaseModel):
     id: int
     location: Optional[str]
 
@@ -170,7 +170,6 @@ class DiscussionLocation(BaseModel):
 
 
 class DiscussionLocationData(BaseModel):
-
     publication_doi: str
     discussion_location_id: int
     count: Optional[int]
@@ -180,7 +179,6 @@ class DiscussionLocationData(BaseModel):
 
 
 class DiscussionAuthor(BaseModel):
-
     id: int
     author: Optional[str]
 
@@ -189,7 +187,6 @@ class DiscussionAuthor(BaseModel):
 
 
 class DiscussionAuthorData(BaseModel):
-
     publication_doi: str
     discussion_author_id: int
     count: Optional[int]
@@ -199,15 +196,14 @@ class DiscussionAuthorData(BaseModel):
 
 
 class DiscussionLang(BaseModel):
-
     id: int
     lang: Optional[str]
 
     class Config:
         orm_mode = True
 
-class DiscussionLangData(BaseModel):
 
+class DiscussionLangData(BaseModel):
     publication_doi: str
     discussion_lang_id: int
     count: Optional[int]
@@ -217,7 +213,6 @@ class DiscussionLangData(BaseModel):
 
 
 class DiscussionType(BaseModel):
-
     id: int
     type: Optional[str]
 
@@ -226,9 +221,25 @@ class DiscussionType(BaseModel):
 
 
 class DiscussionTypeData(BaseModel):
-
     publication_doi: str
     discussion_type_id: int
+    count: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionSource(BaseModel):
+    id: int
+    source: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionSourceData(BaseModel):
+    publication_doi: str
+    discussion_source_id: int
     count: Optional[int]
 
     class Config:
@@ -244,18 +255,21 @@ class Trending(BaseModel):
     median_sentiment: Optional[float]
     sum_follower: Optional[int]
     abstract_difference: Optional[float]
-    tweet_author_diversity: Optional[float]
-    hashtag_diversity: Optional[float]
-    words_diversity: Optional[float]
-    lan_diversity: Optional[float]
-    location_diversity: Optional[float]
+    tweet_author_eveness: Optional[float]
+    lang_eveness: Optional[float]
+    location_eveness: Optional[float]
     median_age: Optional[float]
     median_length: Optional[float]
-    avg_questions: Optional[float]
-    avg_exclamations: Optional[float]
-    bot_percentage: Optional[float]
+    mean_questions: Optional[float]
+    mean_exclamations: Optional[float]
+    mean_bot_rating: Optional[float]
     projected_change: Optional[float]
-    is_trending: Optional[bool]
+    trending: Optional[float]
+    ema: Optional[float]
+    kama: Optional[float]
+    ker: Optional[float]
+    mean_score: Optional[float]
+    stddev: Optional[float]
 
     class Config:
         orm_mode = True
@@ -275,4 +289,3 @@ class TimeValue(BaseModel):
 
     class Config:
         orm_mode = True
-

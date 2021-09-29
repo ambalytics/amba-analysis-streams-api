@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from typing import List
 from sqlalchemy import text, bindparam
@@ -165,3 +166,27 @@ def get_trending_publication2s(session: Session, limit: int = 20):
      JOIN publication p on p.doi = pfos.publication_doi
     LIMIT 10
     """
+
+
+def get_count(query_api):
+    params = {
+        '_start': timedelta(days=-30),
+    }
+
+    query = """
+        from(bucket: "trending")
+          |> range(start: _start)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+          |> filter(fn: (r) => r["_field"] == "score")
+          |> keep(columns: ["doi"])
+          |> group()
+          |> distinct(column: "doi")
+          |> count()
+          |> rename(columns: {_value: "count"})
+    """
+    tables = query_api.query(query, params=params)
+    result = 0
+    for table in tables:
+        for record in table.records:
+            result = record['count']
+    return result
