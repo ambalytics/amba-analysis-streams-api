@@ -13,13 +13,17 @@ from app.routers.field_of_study import router as FieldOfStudyRouter
 from app.routers.author import router as AuthorRouter
 from sqlalchemy.orm import sessionmaker
 from starlette.endpoints import WebSocketEndpoint
-from app.daos.database import SessionLocal
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse, JSONResponse, HTMLResponse
 from starlette.websockets import WebSocket, WebSocketDisconnect
 from aiokafka import AIOKafkaConsumer
 import asyncio
+from app.daos.database import query_api
+
+from app.daos.stats import (
+    system_running_check,
+)
 
 app = FastAPI()
 
@@ -50,4 +54,4 @@ app.include_router(StatsRouter, tags=["Stats"], prefix="/api/stats")
 
 @app.get("/available", response_description="available")
 def is_api_available():
-    return JSONResponse(content=True)
+    return JSONResponse(content=system_running_check(query_api))

@@ -3,24 +3,20 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session  # type: ignore
-from app.models.schema import StatValue, Publication, TimeValue
+from app.models.schema import StatValue, Publication, TimeValue, DiscussionNewestSubj
 
 from app.daos.database import SessionLocal, engine, query_api
 from app.daos.stats import (
-    get_followers_reached,
-    get_top_lang,
-    get_words,
-    get_types,
-    # get_sources,
-    get_top_entities,
-    get_top_hashtags,
-    get_tweet_count,
-    get_tweet_author_count,
-    get_total_score,
-    get_country_list,
-    get_time_count_binned,
-    get_time_count_binned_summed,
-    get_sentiment,
+    get_discussion_data_list,
+    get_discussion_data_list_with_percentage,
+    get_trending_chart_data,
+    get_window_chart_data,
+    get_number_influx,
+    get_profile_information_avg,
+    get_profile_information_for_doi,
+    get_dois_for_author,
+    get_dois_for_field_of_study,
+    get_tweets
 )
 import event_stream.models.model as models
 from starlette.responses import JSONResponse, PlainTextResponse
@@ -37,162 +33,95 @@ def get_session():
         session.close()
 
 
+# 'bot_rating', 'contains_abstract_raw', 'exclamations', 'followers', 'length', 'questions', 'score', 'sentiment_raw', "count"
 @router.get("/numbers", response_description="numbers retrieved")
-def get_numbers(fields: Optional[List[str]] = Query(None), doi: Optional[str] = None):
-    if not fields:
-        fields = ['tweetCount']
+def get_numbers(fields: Optional[List[str]] = Query(None), dois: Optional[List[str]] = Query(None),
+                duration: str = "currently", mode: str = "publication", id: int = None, session: Session = Depends(get_session)):
 
-    field_to_function = {
-        'tweetCount': get_tweet_count,
-        'followersReached': get_followers_reached,
-        'authorCount': get_tweet_author_count,
-        'totalScore': get_total_score,
-    }
+    if mode == "fieldOfStudy" and id:
+        dois = get_dois_for_field_of_study(id, session, duration)
+
+    if mode == "author" and id:
+        dois = get_dois_for_author(id, session, duration)
+
+    if not fields:
+        fields = ['count']
 
     json_compatible_item_data = {}
 
     for field in fields:
-        if field not in field_to_function:
-            return PlainTextResponse(content='field ' + field + ' not found')
-        item = field_to_function[field](query_api, doi)
+        item = get_number_influx(query_api=query_api, dois=dois, duration=duration, field=field)
         json_compatible_item_data[field] = jsonable_encoder(item)
 
     return JSONResponse(content=json_compatible_item_data)
 
 
-@router.get("/top", response_description="top words with count retrieved")
+@router.get("/top", response_description="top values with count retrieved")
 def get_top_values(fields: Optional[List[str]] = Query(None), doi: Optional[str] = None, limit: int = 10,
-                   min_percentage: float = 1, session: Session = Depends(get_session)):
+                   session: Session = Depends(get_session)):
     if not fields:
-        fields = ['languages']
-
-    field_to_function = {
-        'words': get_words,
-        'types': get_types,
-        #'sources': get_sources,
-        'entities': get_top_entities,
-        'hashtags': get_top_hashtags,
-    }
-
-    field_to_function_influx = {
-        'languages': get_top_lang,
-        'countries': get_country_list,
-        'sentiment': get_sentiment,
-    }
+        fields = ['word']
 
     json_compatible_item_data = {}
 
     for field in fields:
-        if field in field_to_function:
-            item = field_to_function[field](session=session, doi=doi, limit=limit, min_percentage=min_percentage)
-            json_compatible_item_data[field] = jsonable_encoder(item)
-        elif field in field_to_function_influx:
-            item = field_to_function_influx[field](query_api, doi)
-            json_compatible_item_data[field] = jsonable_encoder(item)
-        else:
-            return PlainTextResponse(content='field ' + field + ' not found')
+        item = get_discussion_data_list(session=session, doi=doi, limit=limit, dd_type=field)
+        json_compatible_item_data[field] = jsonable_encoder(item)
 
     return JSONResponse(content=json_compatible_item_data)
 
 
-@router.get("/words", response_model=List[StatValue])
-def get_top_words(doi: Optional[str] = None, limit: int = 100, session: Session = Depends(get_session)):
-    item = get_words(session, doi, limit)
-    json_compatible_item_data = jsonable_encoder(item)
+@router.get("/top/percentages", response_description="top values with percentage retrieved")
+def get_top_values(fields: Optional[List[str]] = Query(None), doi: Optional[str] = None, limit: int = 10,
+                   min_percentage: float = 1, session: Session = Depends(get_session)):
+    if not fields:
+        fields = ['lang']
+
+    json_compatible_item_data = {}
+
+    for field in fields:
+        item = get_discussion_data_list_with_percentage(session=session, doi=doi, limit=limit,
+                                                        min_percentage=min_percentage, dd_type=field)
+        json_compatible_item_data[field] = jsonable_encoder(item)
+
     return JSONResponse(content=json_compatible_item_data)
 
 
-@router.get("/types", response_model=List[StatValue])
-def get_item_types(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_types(session, doi)
-    json_compatible_item_data = jsonable_encoder(item)
+# get profile information for a publication by doi
+@router.get("/profile", response_model=List[StatValue])
+def get_profile_information(dois: List[str] = Query(None), duration: Optional[str] = "currently",
+                            mode: str = "publication", id: int = None, session: Session = Depends(get_session)):
+
+    if mode == "fieldOfStudy" and id:
+        dois = get_dois_for_field_of_study(id, session, duration)
+
+    if mode == "author" and id:
+        dois = get_dois_for_author(id, session, duration)
+
+    doi_info = get_profile_information_for_doi(query_api, dois, duration)
+    avg_info = get_profile_information_avg(session, duration)
+
+    json_compatible_item_data = jsonable_encoder({**doi_info, **avg_info})
     return JSONResponse(content=json_compatible_item_data)
 
 
-# @router.get("/sources", response_model=List[StatValue])
-# def get_item_sources(doi: Optional[str] = None, session: Session = Depends(get_session)):
-#     item = get_sources(session, doi)
-#     json_compatible_item_data = jsonable_encoder(item)
-#     return JSONResponse(content=json_compatible_item_data)
-
-
-# tweet author languages
-@router.get("/lang", response_model=List[StatValue])
-def get_item_lang(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_top_lang(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
+# get chart data
+@router.get("/progress/value", response_model=List[StatValue])
+def get_window_progress(field: Optional[str] = Query(None), n: Optional[int] = 5, duration: Optional[str] = "currently"):
+    json_compatible_item_data = get_window_chart_data(query_api, duration, field, n)
     return JSONResponse(content=json_compatible_item_data)
 
 
-# tweet author entities
-@router.get("/entities", response_model=List[StatValue])
-def get_item_entities(doi: Optional[str] = None, limit: int = 10, min_percentage: int = 1,
-                      session: Session = Depends(get_session)):
-    item = get_top_entities(session, doi, limit, min_percentage)
-    json_compatible_item_data = jsonable_encoder(item)
+# get trending chart data
+@router.get("/progress/trending", response_model=List[StatValue])
+def get_trending_progress(field: Optional[str] = Query(None), duration: Optional[str] = "currently"):
+    json_compatible_item_data = get_trending_chart_data(query_api, duration, field)
     return JSONResponse(content=json_compatible_item_data)
 
 
-# tweet author hashtags
-@router.get("/hashtags", response_model=List[StatValue])
-def get_item_hashtags(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_top_hashtags(session, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-# get author locations
-@router.get("/locations", response_model=List[StatValue])
-def get_country_locations(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_country_list(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-# get total followers reached
-@router.get("/followers", response_model=StatValue)
-def get_followers(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_followers_reached(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-# get author count
-@router.get("/authorcount", response_model=StatValue)
-def get_author_count(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_tweet_author_count(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-# get author count
-@router.get("/tweetcount", response_model=StatValue)
-def get_count_tweet(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_tweet_count(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-# get sum of scores
-@router.get("/scoresum", response_model=StatValue)
-def get_summed_score(doi: Optional[str] = None, session: Session = Depends(get_session)):
-    item = get_total_score(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-# get count binned by time
-@router.get("/timebinned", response_model=List[StatValue])
-def get_time_binned(doi: Optional[str] = None, sum: Optional[bool] = True):
-    if sum:
-        item = get_time_count_binned_summed(query_api, doi)
-    else:
-        item = get_time_count_binned(query_api, doi)
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
-
-# get hour binned periodic count
-# @router.get("/dayhour", response_model=List[StatValue])
-# def get_item_dayhour(doi: Optional[str] = None, session: Session = Depends(get_session)):
-#     item = get_tweet_time_of_day(session, doi)
-#     json_compatible_item_data = jsonable_encoder(item)
-#     return JSONResponse(content=json_compatible_item_data)
+# get newest tweets
+@router.get("/tweets")
+def get__tweets_discussion_data(doi: Optional[str] = Query(None), limit: int = 10, session: Session = Depends(get_session)):
+    json_compatible_item_data = get_tweets(doi, session, limit)
+    print(json_compatible_item_data)
+    return json_compatible_item_data

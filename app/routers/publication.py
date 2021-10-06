@@ -13,7 +13,9 @@ from app.daos.publication import (
     retrieve_publication,
     get_publications,
     get_trending_publications,
-    get_count
+    get_count,
+    get_trending_publications_for_field_of_study,
+    get_trending_publications_for_author
 )
 import event_stream.models.model as models
 from starlette.responses import JSONResponse
@@ -42,9 +44,35 @@ def get_publications_router(
 @router.get("/trending")
 def get_trending_publications_router(
         offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'desc', search: str = '',
-        session: Session = Depends(get_session)
+        duration: str = "currently", session: Session = Depends(get_session)
 ):
-    item = get_trending_publications(session=session, offset=offset, limit=limit, sort=sort, order=order, search=search)
+    item = get_trending_publications(session=session, offset=offset, limit=limit, sort=sort, order=order,
+                                     duration=duration, search=search)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
+
+
+@router.get("/trending/fieldOfScience")
+def get_trending_publications_for_field_of_study_router(id: int,
+                                                        offset: int = 0, limit: int = 10, sort: str = 'score',
+                                                        order: str = 'desc', search: str = '',
+                                                        duration: str = "currently",
+                                                        session: Session = Depends(get_session)
+                                                        ):
+    item = get_trending_publications_for_field_of_study(session=session, offset=offset, limit=limit, sort=sort,
+                                                        order=order, duration=duration, search=search, fos_id=id)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content=json_compatible_item_data)
+
+
+@router.get("/trending/author")
+def get_trending_publications_for_author_router(id: int,
+                                                offset: int = 0, limit: int = 10, sort: str = 'score',
+                                                order: str = 'desc', search: str = '',
+                                                duration: str = "currently", session: Session = Depends(get_session)
+                                                ):
+    item = get_trending_publications_for_author(session=session, offset=offset, limit=limit, sort=sort, order=order,
+                                                duration=duration, search=search, author_id=id)
     json_compatible_item_data = jsonable_encoder(item)
     return JSONResponse(content=json_compatible_item_data)
 

@@ -88,7 +88,6 @@ class FieldOfStudy(BaseModel):
     id: int
     name: Optional[str]
     normalized_name: Optional[str]
-    level: Optional[int]
 
     class Config:
         orm_mode = True
@@ -102,145 +101,56 @@ class PublicationFieldOfStudy(BaseModel):
         orm_mode = True
 
 
-class FieldOfStudyChildren(BaseModel):
-    field_of_study_id: int
-    child_field_of_study_id: int
+class PublicationNotFound(BaseModel):
 
-    class Config:
-        orm_mode = True
-
-
-class DiscussionEntity(BaseModel):
-    id: int
-    entity: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionEntityData(BaseModel):
     publication_doi: str
-    discussion_entity_id: int
-    count: Optional[int]
+    last_try: Optional[datetime.datetime]
+    pub_missing: Optional[str]
 
     class Config:
         orm_mode = True
 
 
-class DiscussionHashtag(BaseModel):
+class DiscussionData(BaseModel):
+
     id: int
-    hashtag: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionHashtagData(BaseModel):
-    publication_doi: str
-    discussion_hashtag_id: int
-    count: Optional[int]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionWord(BaseModel):
-    id: int
-    word: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionWordData(BaseModel):
-    publication_doi: str
-    discussion_word_id: int
-    count: Optional[int]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionLocation(BaseModel):
-    id: int
-    location: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionLocationData(BaseModel):
-    publication_doi: str
-    discussion_location_id: int
-    count: Optional[int]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionAuthor(BaseModel):
-    id: int
-    author: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionAuthorData(BaseModel):
-    publication_doi: str
-    discussion_author_id: int
-    count: Optional[int]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionLang(BaseModel):
-    id: int
-    lang: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionLangData(BaseModel):
-    publication_doi: str
-    discussion_lang_id: int
-    count: Optional[int]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionType(BaseModel):
-    id: int
+    value: Optional[str]
     type: Optional[str]
 
     class Config:
         orm_mode = True
 
 
-class DiscussionTypeData(BaseModel):
+class DiscussionDataPoint(BaseModel):
+
     publication_doi: str
-    discussion_type_id: int
+    discussion_data_point_id: int
     count: Optional[int]
 
     class Config:
         orm_mode = True
 
 
-class DiscussionSource(BaseModel):
+class DiscussionNewestSubj(BaseModel):
+
     id: int
+    type: Optional[str]
+    publication_doi: Optional[str]
+    sub_id: Optional[str]
+    created_at: Optional[datetime.datetime]
+    score: Optional[float]
+    bot_rating: Optional[float]
+    followers: Optional[int]
+    sentiment_raw: Optional[float]
+    contains_abstract_raw: Optional[float]
+    lang: Optional[str]
+    location: Optional[str]
     source: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class DiscussionSourceData(BaseModel):
-    publication_doi: str
-    discussion_source_id: int
-    count: Optional[int]
+    subj_type: Optional[str]
+    question_mark_count: Optional[int]
+    exclamation_mark_count: Optional[int]
+    length: Optional[int]
+    entities: Optional[Json]
 
     class Config:
         orm_mode = True
@@ -249,15 +159,12 @@ class DiscussionSourceData(BaseModel):
 class Trending(BaseModel):
     id: int
     publication_doi: Optional[str]
-    duration: Optional[int]
+    duration: Optional[str]
     score: Optional[float]
     count: Optional[int]
     median_sentiment: Optional[float]
-    sum_follower: Optional[int]
+    sum_followers: Optional[int]
     abstract_difference: Optional[float]
-    tweet_author_eveness: Optional[float]
-    lang_eveness: Optional[float]
-    location_eveness: Optional[float]
     median_age: Optional[float]
     median_length: Optional[float]
     mean_questions: Optional[float]

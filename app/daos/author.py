@@ -71,17 +71,25 @@ def get_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 
     return session.execute(s, params).fetchall()
 
 
-def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
-                              order: str = 'desc', duration: int = 3600, search: str = ''):
+def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'asc',
+                         search: str = '', duration: str = "currently"):
     q = """
-         SELECT a.*, SUM(t.score) as score, SUM(t.count) as count, array_agg('{name: "' || p.title || '", doi: "' || p.doi || '", date: "' || p.pub_date || '"}') FROM author a
-             JOIN publication_author pfos on pfos.author_id = a.id
-             JOIN trending t on t.publication_doi = pfos.publication_doi and duration = :duration
-             JOIN publication p on p.doi = pfos.publication_doi
-        """
+          SELECT a.id, a.name, count(t.publication_doi) as pub_count,
+              SUM(t.score) as score, SUM(count) as count, AVG(median_sentiment) as median_sentiment,
+              SUM(sum_followers) as sum_followers, AVG(abstract_difference) as abstract_difference,
+              AVG(median_age) as median_age, AVG(median_length) as median_length, AVG(mean_questions) as mean_questions,
+              AVG(mean_exclamations) as mean_exclamations, AVG(mean_bot_rating) as mean_bot_rating,
+              AVG(projected_change) as projected_change, AVG(trending) as trending, AVG(ema) as ema, AVG(kama) as kama,
+              AVG(ker) as ker, AVG(mean_score) as mean_score, AVG(stddev) as stddev
+          FROM trending t
+              JOIN publication p on p.doi = t.publication_doi
+              JOIN publication_author pa on p.doi = pa.publication_doi
+              JOIN author a on a.id = pa.author_id
+          WHERE duration = :duration
+      """
 
     qs = """
-        WHERE a.name ILIKE '%:search%'
+        AND a.name ILIKE '%:search%'
     """
 
     sortable = ['score', 'count']

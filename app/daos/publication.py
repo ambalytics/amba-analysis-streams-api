@@ -61,9 +61,11 @@ def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: s
 
 
 def get_trending_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
-                              order: str = 'desc', duration: int = 3600, search: str = ''):
+                              order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
+        SELECT p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length, 
+        mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score, 
+        stddev FROM trending t
         JOIN publication p on p.doi = t.publication_doi
         WHERE duration = :duration
         """
@@ -72,7 +74,7 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
         AND p.title ILIKE :search
     """
 
-    sortable = ['score', 'count', 'median_sentiment', 'sum_follower', 'abstract_difference', 'tweet_author_diversity',
+    sortable = ['score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference', 'tweet_author_diversity',
                 'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
                 'avg_exclamations', 'projected_change']
 
@@ -102,6 +104,108 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
         q += qb
         print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'))
+    return session.execute(s, params).fetchall()
+
+
+def get_trending_publications_for_field_of_study(fos_id: int, session: Session, offset: int = 0, limit: int = 10,
+                                                 sort: str = 'score',
+                                                 order: str = 'desc', duration: int = 21600, search: str = ''):
+    q = """
+        SELECT p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
+            mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
+            stddev
+        FROM trending t
+            JOIN publication p on p.doi = t.publication_doi
+            JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
+            WHERE duration = :duration AND field_of_study_id = :fos_id 
+        """
+
+    qs = """
+        AND p.title ILIKE :search
+    """
+
+    sortable = ['score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference', 'tweet_author_diversity',
+                'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
+                'avg_exclamations', 'projected_change']
+
+    qb = ' ORDER BY  '
+    if sort in sortable:
+        qb += sort + ' '
+    else:
+        qb += 'score '
+
+    order_sql = ' ASC '
+    if order == 'desc':
+        order_sql = ' DESC '
+    qb += order_sql
+
+    qb += """
+            LIMIT :limit OFFSET :offset
+        """
+
+    params = {'duration': duration, 'limit': limit, 'offset': offset, 'fos_id': fos_id}
+    if len(search) > 3:
+        params['search'] = '%' + search + '%'
+        q += qs
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('fos_id'),
+                               bindparam('search'))
+    else:
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('fos_id'))
+    return session.execute(s, params).fetchall()
+
+
+def get_trending_publications_for_author(author_id: int, session: Session, offset: int = 0, limit: int = 10,
+                                                 sort: str = 'score',
+                                                 order: str = 'desc', duration: int = 21600, search: str = ''):
+    q = """
+        SELECT p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
+            mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
+            stddev
+        FROM trending t
+            JOIN publication p on p.doi = t.publication_doi
+            JOIN publication_author pa on p.doi = pa.publication_doi
+            WHERE duration = :duration AND author_id = :author_id 
+        """
+
+    qs = """
+        AND p.title ILIKE :search
+    """
+
+    sortable = ['score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference', 'tweet_author_diversity',
+                'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
+                'avg_exclamations', 'projected_change']
+
+    qb = ' ORDER BY  '
+    if sort in sortable:
+        qb += sort + ' '
+    else:
+        qb += 'score '
+
+    order_sql = ' ASC '
+    if order == 'desc':
+        order_sql = ' DESC '
+    qb += order_sql
+
+    qb += """
+            LIMIT :limit OFFSET :offset
+        """
+
+    params = {'duration': duration, 'limit': limit, 'offset': offset, 'author_id': author_id}
+    if len(search) > 3:
+        params['search'] = '%' + search + '%'
+        q += qs
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('author_id'),
+                               bindparam('search'))
+    else:
+        q += qb
+        print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('author_id'))
     return session.execute(s, params).fetchall()
 
 
