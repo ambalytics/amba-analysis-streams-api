@@ -15,7 +15,6 @@ from app.daos.stats import (
 )
 
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
-print(SENTRY_DSN)
 SENTRY_TRACE_SAMPLE_RATE = os.environ.get('SENTRY_TRACE_SAMPLE_RATE')
 sentry_sdk.init(
     dsn=SENTRY_DSN,
