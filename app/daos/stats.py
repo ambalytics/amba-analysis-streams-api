@@ -356,16 +356,16 @@ def get_numbers_influx(query_api, dois, duration="currently", fields=None):
 
     for field in fields:
         query += get_number_influx(filter_obj, duration, field)
-    print(query)
+    # print(query)
     a = time.time()
     if dois:
-        print(filter_obj['params'])
+        # print(filter_obj['params'])
         tables = query_api.query(query, params=filter_obj['params'])
     else:
-        print(params)
+        # print(params)
         tables = query_api.query(query, params=params)
 
-    print(time.time() - a)
+    # print(time.time() - a)
     result = {}
     for table in tables:
         for record in table.records:
@@ -388,7 +388,7 @@ def get_number_influx(filter_obj, duration="currently", field="score"):
     }
 
     if field not in aggregation_field:
-        print('not in field')
+        # print('not in field')
         # return PlainTextResponse(content='field ' + field + ' not found')
         return None
 
@@ -684,12 +684,11 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
         # print(dois)
         doi_list = dois
         if not dois or len(dois) == 0 or dois is None:
-            print('get doi list')
             doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
-
+        if not dois or len(dois) == 0 or dois is None:
+            doi_list = get_top_n_dois(query_api, duration, "count", n)
         if len(doi_list) > n:
             doi_list = doi_list[0:n]
-
         filter_obj = doi_filter_list(doi_list, params)
         query = """
             import "experimental"
@@ -709,7 +708,7 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
              |> yield()
         """
         # print(query)
-        # print(filter_obj['params'])
+        print(filter_obj['params'])
 
         a = time.time()
         tables = query_api.query(query, params=filter_obj['params'])
