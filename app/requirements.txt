@@ -3,3 +3,4 @@ pydantic[email]
 aiofiles
 aiokafka
 sqlalchemy
+influxdb-client

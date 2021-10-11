@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from event_stream.models.model import *
+from influxdb_client import InfluxDBClient
 
 host_server = os.environ.get('POSTGRES_HOST', 'postgres')
 db_server_port = urllib.parse.quote_plus(str(os.environ.get('POSTGRES_PORT', '5432')))
@@ -21,3 +22,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base.metadata.create_all(engine)
 Base = declarative_base()
 
+
+org = os.environ.get('INFLUXDB_V2_ORG', 'ambalytics')
+
+client = InfluxDBClient.from_env_properties()
+write_api = client.write_api()
+query_api = client.query_api()

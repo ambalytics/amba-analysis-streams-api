@@ -1,7 +1,7 @@
 from enum import Enum
 import datetime
-from typing import Optional
-from pydantic import BaseModel, Json
+from typing import Optional, List
+from pydantic import BaseModel, Json, PyObject
 
 
 class PublicationType(str, Enum):
@@ -21,13 +21,29 @@ class Publication(BaseModel):
     id: int
     doi: str
     type: Optional[PublicationType]
-    pubDate: Optional[str]
+    pub_date: Optional[str]
     year: Optional[int]
     publisher: Optional[str]
-    citationCount: Optional[int]
+    citation_count: Optional[int]
     title: Optional[str]
-    normalizedTitle: Optional[str]
+    normalized_title: Optional[str]
     abstract: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class PublicationCitation(BaseModel):
+    publication_doi: str
+    citation_doi: str
+
+    class Config:
+        orm_mode = True
+
+
+class PublicationReference(BaseModel):
+    publication_doi: str
+    reference_doi: str
 
     class Config:
         orm_mode = True
@@ -43,11 +59,9 @@ class Source(BaseModel):
         orm_mode = True
 
 
-class FieldOfStudy(BaseModel):
-    id: int
-    name: Optional[str]
-    normalizedName: Optional[str]
-    level: Optional[int]
+class PublicationSource(BaseModel):
+    publication_doi: str
+    source_id: int
 
     class Config:
         orm_mode = True
@@ -56,103 +70,116 @@ class FieldOfStudy(BaseModel):
 class Author(BaseModel):
     id: int
     name: Optional[str]
-    normalizedName: Optional[str]
+    normalized_name: Optional[str]
 
     class Config:
         orm_mode = True
-
-
-class PublicationCitation(BaseModel):
-    publicationDoi: str
-    citationId: str
-
-
-class PublicationReference(BaseModel):
-    publicationDoi: str
-    referenceId: str
-
-
-class PublicationFieldOfStudy(BaseModel):
-    publicationDoi: str
-    fieldOfStudyId: int
 
 
 class PublicationAuthor(BaseModel):
-    publicationDoi: str
-    authorId: int
-
-
-class PublicationSource(BaseModel):
-    publicationDoi: str
-    sourceId: int
-
-
-class DiscussionData(BaseModel):
-    id: int
-    publicationDoi: Optional[str]
-    createdAt: Optional[datetime.datetime]
-    score: Optional[float]
-    timeScore: Optional[float]
-    typeScore: Optional[float]
-    userScore: Optional[float]
-    language: Optional[str]
-    source: Optional[str]
-    abstractDifference: Optional[float]
-    length: Optional[int]
-    questions: Optional[int]
-    exclamations: Optional[int]
-    type: Optional[str]
-    sentiment: Optional[float]
-    subjId: Optional[int]
-    followers: Optional[int]
-    botScore: Optional[float]
-    authorName: Optional[str]
-    authorLocation: Optional[str]
-    sourceId: Optional[str]
+    publication_doi: str
+    author_id: int
 
     class Config:
         orm_mode = True
 
 
-class DiscussionEntity(BaseModel):
-    id: int
-    entity: Optional[str]
-
-
-class DiscussionHashtag(BaseModel):
-    id: int
-    hashtag: Optional[str]
-
-
-class DiscussionWord(BaseModel):
-    id: int
-    word: Optional[str]
-
-
-class DiscussionAuthor(BaseModel):
+class FieldOfStudy(BaseModel):
     id: int
     name: Optional[str]
+    normalized_name: Optional[str]
+
+    class Config:
+        orm_mode = True
 
 
-class DiscussionEntityData(BaseModel):
-    discussionDataId: int
-    discussionEntityId: int
+class PublicationFieldOfStudy(BaseModel):
+    publication_doi: str
+    field_of_study_id: int
+
+    class Config:
+        orm_mode = True
 
 
-class DiscussionAuthorData(BaseModel):
-    discussionDataId: int
-    discussionAuthorId: int
+class PublicationNotFound(BaseModel):
+
+    publication_doi: str
+    last_try: Optional[datetime.datetime]
+    pub_missing: Optional[str]
+
+    class Config:
+        orm_mode = True
 
 
-class DiscussionWordData(BaseModel):
-    discussionDataId: int
-    discussionWordId: int
+class DiscussionData(BaseModel):
+
+    id: int
+    value: Optional[str]
+    type: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class DiscussionDataPoint(BaseModel):
+
+    publication_doi: str
+    discussion_data_point_id: int
     count: Optional[int]
 
+    class Config:
+        orm_mode = True
 
-class DiscussionHashtagData(BaseModel):
-    discussionDataId: int
-    discussionHashtagId: int
+
+class DiscussionNewestSubj(BaseModel):
+
+    id: int
+    type: Optional[str]
+    publication_doi: Optional[str]
+    sub_id: Optional[str]
+    created_at: Optional[datetime.datetime]
+    score: Optional[float]
+    bot_rating: Optional[float]
+    followers: Optional[int]
+    sentiment_raw: Optional[float]
+    contains_abstract_raw: Optional[float]
+    lang: Optional[str]
+    location: Optional[str]
+    source: Optional[str]
+    subj_type: Optional[str]
+    question_mark_count: Optional[int]
+    exclamation_mark_count: Optional[int]
+    length: Optional[int]
+    entities: Optional[Json]
+
+    class Config:
+        orm_mode = True
+
+
+class Trending(BaseModel):
+    id: int
+    publication_doi: Optional[str]
+    duration: Optional[str]
+    score: Optional[float]
+    count: Optional[int]
+    median_sentiment: Optional[float]
+    sum_followers: Optional[int]
+    abstract_difference: Optional[float]
+    median_age: Optional[float]
+    median_length: Optional[float]
+    mean_questions: Optional[float]
+    mean_exclamations: Optional[float]
+    mean_bot_rating: Optional[float]
+    projected_change: Optional[float]
+    trending: Optional[float]
+    ema: Optional[float]
+    kama: Optional[float]
+    ker: Optional[float]
+    mean_score: Optional[float]
+    stddev: Optional[float]
+
+    class Config:
+        orm_mode = True
 
 
 class StatValue(BaseModel):
@@ -171,13 +198,6 @@ class TimeValue(BaseModel):
         orm_mode = True
 
 
-class AggregatedData(BaseModel):
-    id: int
-    publicationDoi: Optional[str]
-    score: Optional[float]
-
-
-class DebugData(BaseModel):
-    id: int
-    info: Optional[str]
-    data: Optional[Json]
+class AmbaResponse(BaseModel):
+    time: Optional[int]
+    results: List[dict]
