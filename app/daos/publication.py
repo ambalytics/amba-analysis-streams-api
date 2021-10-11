@@ -63,9 +63,9 @@ def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: s
 def get_trending_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
                               order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length, 
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length, 
         mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score, 
-        stddev FROM trending t
+        stddev, count(*) OVER() AS total_count  FROM trending t
         JOIN publication p on p.doi = t.publication_doi
         WHERE duration = :duration
         """
@@ -74,15 +74,16 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
         AND p.title ILIKE :search
     """
 
-    sortable = ['score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference', 'tweet_author_diversity',
-                'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
-                'avg_exclamations', 'projected_change']
+    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
+                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+                'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
 
     qb = ' ORDER BY  '
     if sort in sortable:
         qb += sort + ' '
     else:
         qb += 'score '
+        # todo error
 
     order_sql = ' ASC '
     if order == 'desc':
@@ -98,11 +99,11 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'))
     return session.execute(s, params).fetchall()
 
@@ -111,9 +112,9 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
                                                  sort: str = 'score',
                                                  order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
-            stddev
+            stddev, count(*) OVER() AS total_count 
         FROM trending t
             JOIN publication p on p.doi = t.publication_doi
             JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
@@ -124,9 +125,9 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
         AND p.title ILIKE :search
     """
 
-    sortable = ['score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference', 'tweet_author_diversity',
-                'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
-                'avg_exclamations', 'projected_change']
+    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
+                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+                'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
 
     qb = ' ORDER BY  '
     if sort in sortable:
@@ -148,12 +149,12 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('fos_id'),
                                bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('fos_id'))
     return session.execute(s, params).fetchall()
 
@@ -162,7 +163,7 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
                                                  sort: str = 'score',
                                                  order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
             stddev
         FROM trending t
@@ -175,9 +176,9 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
         AND p.title ILIKE :search
     """
 
-    sortable = ['score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference', 'tweet_author_diversity',
-                'lan_diversity', 'location_diversity', 'median_age', 'median_length', 'avg_questions',
-                'avg_exclamations', 'projected_change']
+    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
+                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+                'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
 
     qb = ' ORDER BY  '
     if sort in sortable:
@@ -199,12 +200,12 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('author_id'),
                                bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('author_id'))
     return session.execute(s, params).fetchall()
 
@@ -240,6 +241,7 @@ def retrieve_publication(session: Session, doi):
     }
 
 
+# remove todo
 def get_trending_publication2s(session: Session, limit: int = 20):
     s = text("""
         SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
@@ -271,26 +273,3 @@ def get_trending_publication2s(session: Session, limit: int = 20):
     LIMIT 10
     """
 
-
-def get_count(query_api):
-    params = {
-        '_start': timedelta(days=-30),
-    }
-
-    query = """
-        from(bucket: "trending")
-          |> range(start: _start)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-          |> filter(fn: (r) => r["_field"] == "score")
-          |> keep(columns: ["doi"])
-          |> group()
-          |> distinct(column: "doi")
-          |> count()
-          |> rename(columns: {_value: "count"})
-    """
-    tables = query_api.query(query, params=params)
-    result = 0
-    for table in tables:
-        for record in table.records:
-            result = record['count']
-    return result

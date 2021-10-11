@@ -8,27 +8,29 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 
-def retrieve_field_of_study(session: Session, id):
+def retrieve_field_of_study(session: Session, id, with_pubs=False):
     params = {'id': id}
     f = text("""SELECT name FROM field_of_study WHERE id=:id""")
     f = f.bindparams(bindparam('id'))
     fos = session.execute(f, params).fetchall()
 
-    p = text("""
-        SELECT p.* FROM publication_field_of_study pf
-        JOIN publication p on p.doi = pf.publication_doi 
-        WHERE pf.field_of_study_id=:id""")
-    p = p.bindparams(bindparam('id'))
-    pubs = session.execute(p, params).fetchall()
+    result = {'fields_of_study': fos[0]}
 
-    return {
-        'fields_of_study': fos,
-        'publications': pubs,
-    }
+    if with_pubs:
+        p = text("""
+            SELECT p.* FROM publication_field_of_study pf
+            JOIN publication p on p.doi = pf.publication_doi 
+            WHERE pf.field_of_study_id=:id""")
+        p = p.bindparams(bindparam('id'))
+        pubs = session.execute(p, params).fetchall()
+
+        result['publications'] = pubs
+
+    return result
 
 
 def get_fields_of_study(session: Session, offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc',
-                     search: str = ''):
+                        search: str = ''):
     q = """
          SELECT fos.*, array_agg('{name: "' || p.title || '", doi: "' || p.doi || '", date: "' || p.pub_date || '"}') FROM field_of_study fos
              JOIN publication_field_of_study pfos on pfos.field_of_study_id = fos.id
@@ -62,18 +64,19 @@ def get_fields_of_study(session: Session, offset: int = 0, limit: int = 10, sort
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('limit'), bindparam('offset'), bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('limit'), bindparam('offset'))
     return session.execute(s, params).fetchall()
 
 
 def get_trending_fields_of_study(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
-                              order: str = 'desc', search: str = '', duration: str = 'currently'):
+                                 order: str = 'desc', search: str = '', duration: str = 'currently'):
     q = """
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, *, count(*) OVER() AS total_count FROM (
             SELECT fos.id, fos.name, count(t.publication_doi) as pub_count,
                 SUM(t.score) as score, SUM(count) as count, AVG(median_sentiment) as median_sentiment,
                 SUM(sum_followers) as sum_followers, AVG(abstract_difference) as abstract_difference,
@@ -88,13 +91,14 @@ def get_trending_fields_of_study(session: Session, offset: int = 0, limit: int =
                 WHERE duration = :duration 
         """
 
+    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
+                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+                'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'pub_count']
+
+    qb = '  GROUP BY fos.id) t ORDER BY  '
     qs = """
-        AND fos.name ILIKE '%:search%'
-    """
-
-    sortable = ['score', 'count']
-
-    qb = '  GROUP BY fos.id ORDER BY  '
+            WHERE fos.name ILIKE '%:search%'
+        """
     if sort in sortable:
         qb += sort + ' '
     else:
@@ -114,10 +118,10 @@ def get_trending_fields_of_study(session: Session, offset: int = 0, limit: int =
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'))
     return session.execute(s, params).fetchall()

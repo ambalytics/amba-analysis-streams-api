@@ -1,32 +1,97 @@
 import json
+import time
 from datetime import timedelta
 
 from sqlalchemy import text, bindparam
 from sqlalchemy.orm import Session  # type: ignore
 
 
-def get_tweets(doi, session: Session, limit: int = 10):
-    query = """
-         SELECT p.doi, p.title, p.abstract, discussion_newest_subj.*, STRING_AGG (a.name, ', ') authors FROM discussion_newest_subj
-            JOIN publication p on discussion_newest_subj.publication_doi = p.doi 
-            JOIN publication_author pa on p.doi = pa.publication_doi
-            JOIN author a on a.id = pa.author_id
-         WHERE discussion_newest_subj.type = 'twitter'         
-    """
-    params = {'limit': limit}
+def get_tweet_author_count(doi, session: Session, id, mode="publication"):
+    params = {}
+    if mode == "fieldOfStudy":
+        query = """SELECT SUM(count) as count 
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                         JOIN publication_field_of_study as pfos on ddp.publication_doi = pfos.publication_doi
+                    WHERE type = 'name' AND pfos.field_of_study_id=:id """
+        params['id'] = id
+    elif mode == "author":
+        query = """SELECT SUM(count) as count 
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                         JOIN publication_author as pfos on ddp.publication_doi = pfos.publication_doi
+                    WHERE type = 'name'  AND pfos.author_id=:id """
+        params['id'] = id
+    else:  # default publication
+        query = """SELECT SUM(count) as count
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                    WHERE type = 'name'  """
+
     if doi:
         query += " AND publication_doi = :doi "
         params['doi'] = doi
-    query += " GROUP BY (p.doi, p.title,  p.abstract, discussion_newest_subj.id) ORDER BY created_at DESC LIMIT :limit "
 
-    print(query)
-    print(params)
+    # print(query)
+    # print(params)
 
     s = text(query)
     if doi:
-        s = s.bindparams(bindparam('limit'), bindparam('doi'))
-    else:
-        s = s.bindparams(bindparam('limit'))
+        s = s.bindparams(bindparam('doi'))
+
+    return session.execute(s, params).fetchall()
+
+
+def get_tweets(doi, session: Session, id, mode="publication"):
+    params = {}
+    query = """  
+         SELECT p.*, p2.title, p2.abstract, discussion_newest_subj.*
+                FROM (SELECT discussion_newest_subj.*
+                  from discussion_newest_subj """
+    if mode == "publication":
+        query += """ WHERE discussion_newest_subj.type = 'twitter' """
+    if mode == "fieldOfStudy":
+        query += """
+                JOIN publication_field_of_study pfos on discussion_newest_subj.publication_doi = pfos.publication_doi
+                  WHERE discussion_newest_subj.type = 'twitter' AND pfos.field_of_study_id = :id
+                """
+        params['id'] = id
+    if mode == "author":
+        query += """
+                JOIN publication_author pfos on discussion_newest_subj.publication_doi = pfos.publication_doi
+                  WHERE discussion_newest_subj.type = 'twitter' AND pfos.author_id = :id
+                """
+        params['id'] = id
+    extra = """              
+                  ORDER BY created_at DESC
+                  LIMIT 1) as discussion_newest_subj
+                     JOIN
+                 (SELECT p.id, p.doi, STRING_AGG(p.name, ', ') authors
+                  FROM (SELECT p.*, a.name
+                        FROM publication p
+                                 JOIN publication_author pa on p.doi = pa.publication_doi
+                                 JOIN author a on a.id = pa.author_id
+                       ) as p
+                  GROUP BY (p.id, p.doi)
+                 ) as p
+                 on discussion_newest_subj.publication_doi = p.doi
+                     JOIN publication p2 on p2.doi = p.doi;    
+    """
+
+    if doi:
+        query += " AND publication_doi = :doi "
+        params['doi'] = doi
+
+    query += extra
+
+    # print(query)
+    # print(params)
+
+    s = text(query)
+    if doi:
+        s = s.bindparams(bindparam('doi'))
+    if id:
+        s = s.bindparams(bindparam('id'))
 
     return session.execute(s, params).fetchall()
 
@@ -35,13 +100,13 @@ def get_dois_for_field_of_study(id, session: Session, duration="currently"):
     query = """
         SELECT t.publication_doi
         FROM trending t
-            JOIN publication_author pa on t.publication_doi = pa.publication_doi
-        WHERE duration = :duration AND pa.author_id = :author_id;
+            JOIN publication_field_of_study pfos on t.publication_doi = pfos.publication_doi
+        WHERE duration = :duration AND field_of_study_id = :fos_id;
     """
 
-    params = {'duration': duration, 'author_id': id}
+    params = {'duration': duration, 'fos_id': id}
     s = text(query)
-    s = s.bindparams(bindparam('duration'), bindparam('author_id'))
+    s = s.bindparams(bindparam('duration'), bindparam('fos_id'))
     rows = session.execute(s, params).fetchall()
 
     result = []
@@ -56,13 +121,13 @@ def get_dois_for_author(id, session: Session, duration="currently"):
     query = """
         SELECT t.publication_doi
         FROM trending t
-            JOIN publication_field_of_study pfos on t.publication_doi = pfos.publication_doi
-        WHERE duration = :duration AND field_of_study_id = :fos_id;
+            JOIN publication_author pa on t.publication_doi = pa.publication_doi
+        WHERE duration = :duration AND pa.author_id = :author_id;
     """
 
-    params = {'duration': duration, 'fos_id': id}
+    params = {'duration': duration, 'author_id': id}
     s = text(query)
-    s = s.bindparams(bindparam('duration'), bindparam('fos_id'))
+    s = s.bindparams(bindparam('duration'), bindparam('author_id'))
     rows = session.execute(s, params).fetchall()
 
     result = []
@@ -133,7 +198,7 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                              FROM (SELECT "value", "count"
                                    FROM discussion_data_point as ddp
                                             JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
-                                   WHERE type = :type
+                                   WHERE type = :type and value != 'und' and value != 'unknown'
                                      """
     extra1 = """) temp
                              GROUP BY "value"
@@ -145,7 +210,7 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                              SELECT 'total' as "value", SUM(count) as c, 100 as p
                              FROM discussion_data_point as ddp
                                       JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
-                             WHERE type = :type
+                             WHERE type = :type and value != 'und' and value != 'unknown'
                                """
     extra2 = """
                          )
@@ -183,13 +248,29 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
     return session.execute(s, params).fetchall()
 
 
-def get_discussion_data_list(session: Session, doi, limit, dd_type="word"):
-    query = """SELECT SUM(ddp.count) as count, dd.value
-                FROM discussion_data_point as ddp
-                     JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
-                WHERE type = :type """
-    extra = """ GROUP BY dd.id ORDER BY count DESC """
+def get_discussion_data_list(session: Session, doi, limit, id, mode="publication", dd_type="word"):
     params = {'type': dd_type}
+    if mode == "fieldOfStudy":
+        query = """SELECT SUM(ddp.count) as count, dd.value
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                         JOIN publication_field_of_study as pfos on ddp.publication_doi = pfos.publication_doi
+                    WHERE type = :type and value != 'und' and value != 'unknown' AND pfos.field_of_study_id=:id """
+        params['id'] = id
+    elif mode == "author":
+        query = """SELECT SUM(ddp.count) as count, dd.value
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                         JOIN publication_author as pfos on ddp.publication_doi = pfos.publication_doi
+                    WHERE type = :type and value != 'und' and value != 'unknown' AND pfos.author_id=:id """
+        params['id'] = id
+    else:  # default publication
+        query = """SELECT SUM(ddp.count) as count, dd.value
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                    WHERE type = :type and value != 'und' and value != 'unknown' """
+
+    extra = """ GROUP BY dd.id ORDER BY count DESC """
 
     if limit:
         params['limit'] = limit
@@ -254,7 +335,45 @@ trending_time_definition = {
 }
 
 
-def get_number_influx(query_api, dois, duration="currently", field="score"):
+def get_numbers_influx(query_api, dois, duration="currently", fields=None):
+    if fields is None:
+        fields = ["score"]
+
+    query = """
+            _start = _duration_time
+            _stop =  now()
+            
+            """
+
+    params = {
+        '_duration_time': trending_time_definition[duration]['duration'],
+        '_bucket': trending_time_definition[duration]['name'],
+    }
+
+    filter_obj = None
+    if dois:
+        filter_obj = doi_filter_list(dois, params)
+
+    for field in fields:
+        query += get_number_influx(filter_obj, duration, field)
+    print(query)
+    a = time.time()
+    if dois:
+        print(filter_obj['params'])
+        tables = query_api.query(query, params=filter_obj['params'])
+    else:
+        print(params)
+        tables = query_api.query(query, params=params)
+
+    print(time.time() - a)
+    result = {}
+    for table in tables:
+        for record in table.records:
+            result[record['result']] = record['_value']
+    return result
+
+
+def get_number_influx(filter_obj, duration="currently", field="score"):
     aggregation_field = {
         'bot_rating': 'mean',
         'contains_abstract_raw': 'mean',
@@ -264,10 +383,9 @@ def get_number_influx(query_api, dois, duration="currently", field="score"):
         'questions': 'mean',
         'score': 'sum',
         'sentiment_raw': 'mean',
-        "count": "count",
-        "pub_count": "count"
+        "pub_count": "count",
+        "count": "count"
     }
-    print(field)
 
     if field not in aggregation_field:
         print('not in field')
@@ -277,32 +395,21 @@ def get_number_influx(query_api, dois, duration="currently", field="score"):
     else:
         aggregator = aggregation_field[field]
 
+        field_selector = field
         if field == "count":
+            field = "temp_count"  # avoid trouble with renaming a function (count())
             if duration == "currently":
-                field = "score"
+                field_selector = "score"
             else:
                 aggregator = "sum"
 
-        params = {
-            '_field_name': field,
-            '_duration_time': trending_time_definition[duration]['duration'],
-            '_bucket': trending_time_definition[duration]['name'],
-        }
-
         if field == "pub_count":
-            params['_field_name'] = 'score'
+            field_selector = 'score'
 
-        filter_obj = None
-        if dois:
-            filter_obj = doi_filter_list(dois, params)
-        query = """
-                _start = _duration_time
-                _stop =  now()
-
-               a = from(bucket: _bucket)
-                 |> range(start: _start, stop:  _stop)
-                 |> filter(fn: (r) => r["_measurement"] == "trending")
-                 |> filter(fn: (r) => r["_field"] == _field_name) """
+        query = field + ''' = from(bucket: _bucket)
+                |> range(start: _start, stop: _stop)
+                |> filter(fn: (r) => r["_measurement"] == "trending")
+                |> filter(fn: (r) => r["_field"] == "''' + field_selector + '")'
         if filter_obj:
             query += filter_obj['string']
         query += """
@@ -310,23 +417,17 @@ def get_number_influx(query_api, dois, duration="currently", field="score"):
                  """
         if field == "pub_count":
             query += '|> distinct(column: "doi")'
-        query += """
-                 |> """ + aggregator + """()
+
+        if field == "temp_count":
+            field = "count"
+
+        query += '''
+                 |> ''' + aggregator + '''()
                  |> keep(columns: ["_value", "_time", "doi"])
-                 |> yield()
-            """
-        # print(query)
-
-        if dois:
-            # print(filter_obj['params'])
-            tables = query_api.query(query, params=filter_obj['params'])
-        else:
-            # print(params)
-            tables = query_api.query(query, params=params)
-
-        for table in tables:
-            for record in table.records:
-                return record['_value']
+                 |> yield(name: "''' + field + '''")
+                 
+            '''
+        return query
 
 
 # extend this by newest trending data?
@@ -471,7 +572,6 @@ def fetch_with_doi_filter(session: Session, query, doi):
     return session.execute(s).fetchall()
 
 
-# use top from trending?
 def get_top_n_dois(query_api, duration="currently", field="count", n=5):
     if field is "count":
         params = {
@@ -511,7 +611,44 @@ def get_top_n_dois(query_api, duration="currently", field="count", n=5):
         return results
 
 
-def get_window_chart_data(query_api, duration="currently", field="score", n=5):
+def get_top_n_trending_dois(query_api, duration="currently", field="count", n=5):
+    if field is "count":
+        params = {
+            '_window_time': trending_time_definition[duration]['window_size'],
+            '_duration_time': timedelta(seconds=-trending_time_definition[duration]['duration'].total_seconds()),
+            '_bucket': trending_time_definition[duration]['trending_bucket'],
+
+            '_n': n,
+        }
+        query = """
+            import "experimental"
+            import "date"
+
+            _start = experimental.subDuration(d: _duration_time, from: date.truncate(t: now(), unit: _window_time))
+            _stop =  date.truncate(t: now(), unit: _window_time)
+
+            a = from(bucket: _bucket)
+                |> range(start: _start, stop:  _stop)
+                |> filter(fn: (r) => r["_measurement"] == "trending")
+                |> filter(fn: (r) => r["_field"] == "score")
+                |> sum()
+                |> group()
+                |> sort(desc: true)
+                |> keep(columns: ["_value", "doi"])
+                |> rename(columns: {_value: "count"})   
+                |> limit(n: _n)
+                |> yield()
+        """
+
+        tables = query_api.query(query, params=params)
+        results = []
+        for table in tables:
+            for record in table.records:
+                results.append(record['doi'])
+        return results
+
+
+def get_window_chart_data(query_api, duration="currently", field="score", n=5, dois=None):
     aggregation_field = {
         'bot_rating': 'mean',
         'contains_abstract_raw': 'median',
@@ -531,8 +668,8 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5):
     else:
         aggregator = aggregation_field[field]
 
-        if field is "count":
-            if duration is "currently":
+        if field == "count":
+            if duration == "currently":
                 field = "score"
             else:
                 aggregator = "sum"
@@ -544,7 +681,15 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5):
             '_bucket': trending_time_definition[duration]['name'],
         }
 
-        doi_list = get_top_n_dois(query_api, duration, "count", n)
+        # print(dois)
+        doi_list = dois
+        if not dois or len(dois) == 0 or dois is None:
+            print('get doi list')
+            doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
+
+        if len(doi_list) > n:
+            doi_list = doi_list[0:n]
+
         filter_obj = doi_filter_list(doi_list, params)
         query = """
             import "experimental"
@@ -566,33 +711,52 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5):
         # print(query)
         # print(filter_obj['params'])
 
+        a = time.time()
         tables = query_api.query(query, params=filter_obj['params'])
+        # print(time.time() - a)
+
         results = []
         for table in tables:
-            value = []
-            time = []
+
             doi = None
+            data = []
             for record in table.records:
-                value.append(record['_value'])
-                time.append(record['_time'].strftime("%Y-%m-%dT%H:%M:%SZ"))
+                point = {'time': record['_time'].strftime("%Y-%m-%dT%H:%M:%SZ"), 'value': record['_value']}
+                data.append(point)
                 if not doi:
                     doi = record['doi']
             results.append({
                 "doi": doi,
-                "value": value,
-                "time": time,
+                "data": data,
             })
-        # print(results)
+
         return results
 
 
-def get_trending_chart_data(query_api, duration="currently", field="score"):
+def get_trending_chart_data(query_api, duration="currently", field="score", n=5, dois=None):
+    fields = ['score', 'count', 'median_sentiment', 'sum_follower', 'abstract_difference', 'median_age',
+              'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating', 'projected_change',
+              'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev']
+
+    if field not in fields:
+        # print('error')  # todo
+        return None
+
     params = {
         '_field_name': field,
         '_window_time': trending_time_definition[duration]['window_size'],
         "_duration_time": timedelta(seconds=-trending_time_definition[duration]['duration'].total_seconds()),
         '_bucket': trending_time_definition[duration]['trending_bucket'],
     }
+
+    doi_list = dois
+    if not dois:
+        doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
+
+    if len(doi_list) > n:
+        doi_list = doi_list[0:n]
+
+    filter_obj = doi_filter_list(doi_list, params)
 
     query = """
         import "experimental"
@@ -603,31 +767,30 @@ def get_trending_chart_data(query_api, duration="currently", field="score"):
 
        a = from(bucket: _bucket)
          |> range(start: _start, stop:  _stop)
-         |> filter(fn: (r) => r["_measurement"] == "trending")
-         |> filter(fn: (r) => r["_field"] == _field_name)
+         |> filter(fn: (r) => r["_measurement"] == "trending") 
+         |> filter(fn: (r) => r["_field"] == _field_name) """
+    query += filter_obj['string']
+    query += """
          |> keep(columns: ["_value", "_time", "_field", "doi"])
          |> yield()
     """
 
-    # print(query)
-    # print(params)
-    tables = query_api.query(query, params=params)
+    tables = query_api.query(query, params=filter_obj['params'])
     results = []
     for table in tables:
-        value = []
-        time = []
+
         doi = None
+        data = []
         for record in table.records:
-            value.append(record['_value'])
-            time.append(record['_time'].strftime("%Y-%m-%dT%H:%M:%SZ"))
+            point = {'time': record['_time'].strftime("%Y-%m-%dT%H:%M:%SZ"), 'value': record['_value']}
+            data.append(point)
             if not doi:
                 doi = record['doi']
         results.append({
             "doi": doi,
-            "value": value,
-            "time": time
+            "data": data,
         })
-    # print(results)
+
     return results
 
 

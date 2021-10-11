@@ -1,7 +1,7 @@
 from enum import Enum
 import datetime
-from typing import Optional
-from pydantic import BaseModel, Json
+from typing import Optional, List
+from pydantic import BaseModel, Json, PyObject
 
 
 class PublicationType(str, Enum):
@@ -196,3 +196,8 @@ class TimeValue(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class AmbaResponse(BaseModel):
+    time: Optional[int]
+    results: List[dict]

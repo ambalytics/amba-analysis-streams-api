@@ -8,23 +8,25 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 
-def retrieve_author(session: Session, id):
+def retrieve_author(session: Session, id, with_pubs=False):
     params = {'id': id}
     f = text("""SELECT name FROM author WHERE id=:id""")
     f = f.bindparams(bindparam('id'))
     a = session.execute(f, params).fetchall()
 
-    p = text("""
-        SELECT p.* FROM publication_author pf
-        JOIN publication p on p.doi = pf.publication_doi 
-        WHERE pf.author_id=:id""")
-    p = p.bindparams(bindparam('id'))
-    pubs = session.execute(p, params).fetchall()
+    result = {'author': a[0]}
 
-    return {
-        'author': a,
-        'publications': pubs,
-    }
+    if with_pubs:
+        p = text("""
+              SELECT p.* FROM publication_author pf
+              JOIN publication p on p.doi = pf.publication_doi 
+              WHERE pf.author_id=:id""")
+        p = p.bindparams(bindparam('id'))
+        pubs = session.execute(p, params).fetchall()
+
+        result['publications'] = pubs
+
+    return result
 
 
 def get_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc',
@@ -62,11 +64,11 @@ def get_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('limit'), bindparam('offset'), bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('limit'), bindparam('offset'))
     return session.execute(s, params).fetchall()
 
@@ -74,6 +76,7 @@ def get_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 
 def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'asc',
                          search: str = '', duration: str = "currently"):
     q = """
+    SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, *, count(*) OVER() AS total_count FROM (
           SELECT a.id, a.name, count(t.publication_doi) as pub_count,
               SUM(t.score) as score, SUM(count) as count, AVG(median_sentiment) as median_sentiment,
               SUM(sum_followers) as sum_followers, AVG(abstract_difference) as abstract_difference,
@@ -88,13 +91,14 @@ def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sor
           WHERE duration = :duration
       """
 
+    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
+                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+                'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'pub_count']
+
+    qb = '  GROUP BY a.id) t ORDER BY  '
     qs = """
-        AND a.name ILIKE '%:search%'
-    """
-
-    sortable = ['score', 'count']
-
-    qb = '  GROUP BY a.id ORDER BY  '
+            WHERE a.name ILIKE '%:search%'
+        """
     if sort in sortable:
         qb += sort + ' '
     else:
@@ -114,10 +118,10 @@ def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sor
         params['search'] = '%' + search + '%'
         q += qs
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('search'))
     else:
         q += qb
-        print(q)
+        # print(q)
         s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'))
     return session.execute(s, params).fetchall()
