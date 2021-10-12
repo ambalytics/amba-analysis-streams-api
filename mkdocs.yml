@@ -7,7 +7,21 @@ repo_url: 'https://github.com/ambalytics/amba-analysis-worker-aggregator'
 nav:
     - Home: index.md
     - Code Reference:
-        aggregator: aggregator_ref.md
+        main: main_ref.md
+        daos:
+          author: daos/author_ref.md
+          database: daos/database_ref.md
+          field_of_study: daos/field_of_study_ref.md
+          publication: daos/publication_ref.md
+          stats: daos/stats_ref.md
+        models:
+          schema: models/schema_red.md
+        routers:
+          author: routers/author_ref.md
+          field_of_study: routers/field_of_study_ref.md
+          publication: routers/publication_ref.md
+          stats: routers/stats_ref.md
+        update_consumer: update_consumer_ref.md
 
 theme:
   name: material
