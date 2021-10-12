@@ -15,7 +15,7 @@ nav:
           publication: daos/publication_ref.md
           stats: daos/stats_ref.md
         models:
-          schema: models/schema_red.md
+          schema: models/schema.md
         routers:
           author: routers/author_ref.md
           field_of_study: routers/field_of_study_ref.md

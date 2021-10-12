@@ -1,1 +1,1 @@
-::: stats
+::: daos.stats
