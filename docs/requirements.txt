@@ -1,9 +1,8 @@
-amba-event-stream
 pydantic[email]
 aiofiles
 aiokafka
-sqlalchemy
 influxdb-client
+fastapi[all]
 sentry_sdk
 mkdocs
 mkdocs-material
