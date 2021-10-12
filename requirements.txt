@@ -1,0 +1,9 @@
+pydantic[email]
+aiofiles
+aiokafka
+influxdb-client
+fastapi[all]
+sentry_sdk
+mkdocs
+mkdocs-material
+mkdocstrings
