@@ -1,1 +1,1 @@
-::: stats
+::: routers.stats

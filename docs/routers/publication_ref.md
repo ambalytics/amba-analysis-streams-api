@@ -1,1 +1,1 @@
-::: publication
+::: routers.publication

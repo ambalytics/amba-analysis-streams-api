@@ -573,7 +573,7 @@ def fetch_with_doi_filter(session: Session, query, doi):
 
 
 def get_top_n_dois(query_api, duration="currently", field="count", n=5):
-    if field is "count":
+    if field == "count":
         params = {
             '_window_time': trending_time_definition[duration]['window_size'],
             "_duration_time": timedelta(seconds=-trending_time_definition[duration]['duration'].total_seconds()),
@@ -612,7 +612,7 @@ def get_top_n_dois(query_api, duration="currently", field="count", n=5):
 
 
 def get_top_n_trending_dois(query_api, duration="currently", field="count", n=5):
-    if field is "count":
+    if field == "count":
         params = {
             '_window_time': trending_time_definition[duration]['window_size'],
             '_duration_time': timedelta(seconds=-trending_time_definition[duration]['duration'].total_seconds()),

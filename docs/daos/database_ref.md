@@ -1,1 +1,1 @@
-::: database
+::: daos.database

@@ -1,1 +1,1 @@
-::: schema
+::: models.schema

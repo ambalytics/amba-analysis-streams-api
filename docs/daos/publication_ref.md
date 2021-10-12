@@ -1,1 +1,1 @@
-::: publication
+::: daos.publication
