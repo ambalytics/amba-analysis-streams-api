@@ -45,4 +45,3 @@ plugins:
             - sys.modules["sqlalchemy"] = mock()
             - sys.modules["sqlalchemy.orm"] = mock()
             - sys.modules["sqlalchemy.ext.declarative"] = mock()
-            - import declarative_base
