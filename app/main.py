@@ -80,13 +80,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/publication")
-app.include_router(FieldOfStudyRouter, tags=["FieldOfStudy"], prefix="/api/fieldOfStudy")
-app.include_router(AuthorRouter, tags=["Author"], prefix="/api/author")
-app.include_router(StatsRouter, tags=["Stats"], prefix="/api/stats")
+app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/trend/publication")
+app.include_router(FieldOfStudyRouter, tags=["FieldOfStudy"], prefix="/api/trend/fieldOfStudy")
+app.include_router(AuthorRouter, tags=["Author"], prefix="/api/trend/author")
+app.include_router(StatsRouter, tags=["Stats"], prefix="/api/trend/stats")
 
 
-@app.get("/available", response_description="available", summary="Check if api is available.")
+@app.get("api/trend/available", response_description="available", summary="Check if api is available.")
 def is_api_available():
     """
     Checks if the api is running as expected.

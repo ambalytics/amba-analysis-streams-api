@@ -97,7 +97,7 @@ def get_trending_fields_of_study(session: Session, offset: int = 0, limit: int =
 
     qb = '  GROUP BY fos.id) t ORDER BY  '
     qs = """
-            WHERE fos.name ILIKE '%:search%'
+            AND fos.name ILIKE :search
         """
     if sort in sortable:
         qb += sort + ' '

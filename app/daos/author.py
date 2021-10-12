@@ -97,7 +97,7 @@ def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sor
 
     qb = '  GROUP BY a.id) t ORDER BY  '
     qs = """
-            WHERE a.name ILIKE '%:search%'
+            AND a.name ILIKE :search
         """
     if sort in sortable:
         qb += sort + ' '
