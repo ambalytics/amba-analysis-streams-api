@@ -86,7 +86,7 @@ app.include_router(AuthorRouter, tags=["Author"], prefix="/api/trend/author")
 app.include_router(StatsRouter, tags=["Stats"], prefix="/api/trend/stats")
 
 
-@app.get("api/trend/available", response_description="available", summary="Check if api is available.")
+@app.get("/api/trend/available", response_description="available", summary="Check if api is available.")
 def is_api_available():
     """
     Checks if the api is running as expected.
