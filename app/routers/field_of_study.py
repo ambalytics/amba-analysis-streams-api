@@ -52,7 +52,7 @@ def get_fields_of_study_router(
 @router.get("/trending", summary="Get trending Fields of Study.", response_model=AmbaResponse)
 def get_trending_fields_of_study_router(
         offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'desc', search: str = '',
-        session: Session = Depends(get_session)):
+        duration: str = "currently", session: Session = Depends(get_session)):
     """
         Return trending fields of study and their trending data for a given duration.
 
@@ -68,7 +68,7 @@ def get_trending_fields_of_study_router(
         """
     start = time.time()
     item = get_trending_fields_of_study(session=session, offset=offset, limit=limit, sort=sort, order=order,
-                                        search=search)
+                                        duration=duration, search=search)
     json_compatible_item_data = jsonable_encoder(item)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 

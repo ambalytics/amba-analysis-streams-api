@@ -211,9 +211,8 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
 
 
 def retrieve_publication(session: Session, doi):
-    # todo check security
     pub = session.query(Publication).filter_by(doi=doi).all()
-    a = text("""SELECT name FROM publication_author as p
+    a = text("""SELECT id, name FROM publication_author as p
                 JOIN author as a on (a.id = p.author_id)
                 WHERE p.publication_doi=:doi""")
 
@@ -221,7 +220,7 @@ def retrieve_publication(session: Session, doi):
     a = a.bindparams(bindparam('doi'))
     authors = session.execute(a, params).fetchall()
 
-    f = text("""SELECT name FROM publication_field_of_study as p
+    f = text("""SELECT id, name FROM publication_field_of_study as p
                 JOIN field_of_study as a on (a.id = p.field_of_study_id)
                 WHERE p.publication_doi=:doi""")
     f = f.bindparams(bindparam('doi'))

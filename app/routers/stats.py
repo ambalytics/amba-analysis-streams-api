@@ -248,7 +248,7 @@ def get_tweets_discussion_data(doi: Optional[str] = Query(None), mode: str = "pu
         - **id**: needed for 'fieldOfStudy' or 'author' mode, the id of the entity
     """
     start = time.time()
-    json_compatible_item_data = get_tweets(doi=doi, session=session, id=id, mode=mode)
+    json_compatible_item_data = [get_tweets(doi=doi, session=session, id=id, mode=mode)]
     # print(json_compatible_item_data)
     return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
 

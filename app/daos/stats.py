@@ -45,9 +45,10 @@ def get_tweet_author_count(doi, session: Session, id, mode="publication"):
 def get_tweets(doi, session: Session, id, mode="publication"):
     params = {}
     query = """  
-         SELECT p.*, p2.title, p2.abstract, discussion_newest_subj.*
-                FROM (SELECT discussion_newest_subj.*
-                  from discussion_newest_subj """
+         SELECT p.*, p.title, p.abstract, discussion_newest_subj.*
+            FROM discussion_newest_subj
+                     JOIN publication p on discussion_newest_subj.publication_doi = p.doi
+          """
     if mode == "publication":
         query += """ WHERE discussion_newest_subj.type = 'twitter' """
     if mode == "fieldOfStudy":
@@ -63,19 +64,8 @@ def get_tweets(doi, session: Session, id, mode="publication"):
                 """
         params['id'] = id
     extra = """              
-                  ORDER BY created_at DESC
-                  LIMIT 1) as discussion_newest_subj
-                     JOIN
-                 (SELECT p.id, p.doi, STRING_AGG(p.name, ', ') authors
-                  FROM (SELECT p.*, a.name
-                        FROM publication p
-                                 JOIN publication_author pa on p.doi = pa.publication_doi
-                                 JOIN author a on a.id = pa.author_id
-                       ) as p
-                  GROUP BY (p.id, p.doi)
-                 ) as p
-                 on discussion_newest_subj.publication_doi = p.doi
-                     JOIN publication p2 on p2.doi = p.doi;    
+            ORDER BY created_at DESC
+            LIMIT 1;    
     """
 
     if doi:
@@ -93,7 +83,17 @@ def get_tweets(doi, session: Session, id, mode="publication"):
     if id:
         s = s.bindparams(bindparam('id'))
 
-    return session.execute(s, params).fetchall()
+    tweet_data = session.execute(s, params).fetchone()
+
+    a = text("""SELECT id, name FROM publication_author as p
+                    JOIN author as a on (a.id = p.author_id)
+                    WHERE p.publication_doi=:doi""")
+
+    params = {'doi': tweet_data['doi'], }
+    a = a.bindparams(bindparam('doi'))
+    authors = session.execute(a, params).fetchall()
+
+    return {'authors': authors, 'data': tweet_data}
 
 
 def get_dois_for_field_of_study(id, session: Session, duration="currently"):
