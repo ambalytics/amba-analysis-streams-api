@@ -1,7 +1,10 @@
 amba-event-stream
-faust-streaming
-heapdict
-
+pydantic[email]
+aiofiles
+aiokafka
+sqlalchemy
+influxdb-client
+sentry_sdk
 mkdocs
 mkdocs-material
 mkdocstrings
