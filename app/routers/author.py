@@ -32,7 +32,7 @@ def get_session():
 @router.get("/", summary="Get Authors.", response_model=AmbaResponse)
 def get_authors_router(
         offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc', search: str = '',
-        session: Session = Depends(get_session)):
+        duration: str = "currently", session: Session = Depends(get_session)):
     """
     Return authors data with added reduced publication data as json. This will **not** contain any trending or processed data.
 
@@ -44,7 +44,7 @@ def get_authors_router(
     """
     start = time.time()
     json_compatible_item_data = get_authors(session=session, offset=offset, limit=limit, sort=sort, order=order,
-                                            search=search)
+                                            duration=duration, search=search)
     return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
 
 
