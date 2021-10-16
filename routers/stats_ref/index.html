@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.3.3">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.3">
     
     
       
@@ -889,9 +889,9 @@ the avg, min and max to compare against.</p>
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Missing data.&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;field of study &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span>
+        <span class="c1"># print(&#39;field of study &#39; + str(id))</span>
         <span class="n">dois</span> <span class="o">=</span> <span class="n">get_dois_for_field_of_study</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">dois</span><span class="p">)</span>
+        <span class="c1"># print(dois)</span>
 
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">:</span>
         <span class="n">dois</span> <span class="o">=</span> <span class="n">get_dois_for_author</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
@@ -900,13 +900,16 @@ the avg, min and max to compare against.</p>
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Missing data.&quot;</span><span class="p">)</span>
 
     <span class="n">doi_info</span> <span class="o">=</span> <span class="n">get_profile_information_for_doi</span><span class="p">(</span><span class="n">query_api</span><span class="p">,</span> <span class="n">dois</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="nb">id</span> <span class="ow">and</span> <span class="n">doi_info</span><span class="p">:</span>
         <span class="n">doi_info</span><span class="p">[</span><span class="s1">&#39;publication&#39;</span><span class="p">][</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">retrieve_field_of_study</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="p">)[</span><span class="s1">&#39;fields_of_study&#39;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="nb">id</span> <span class="ow">and</span> <span class="n">doi_info</span><span class="p">:</span>
         <span class="n">doi_info</span><span class="p">[</span><span class="s1">&#39;publication&#39;</span><span class="p">][</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">retrieve_author</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="p">)[</span><span class="s1">&#39;author&#39;</span><span class="p">]</span>
     <span class="n">avg_info</span> <span class="o">=</span> <span class="n">get_profile_information_avg</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
 
-    <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">jsonable_encoder</span><span class="p">({</span><span class="o">**</span><span class="n">doi_info</span><span class="p">,</span> <span class="o">**</span><span class="n">avg_info</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">doi_info</span> <span class="ow">and</span> <span class="n">avg_info</span><span class="p">:</span>
+        <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">jsonable_encoder</span><span class="p">({</span><span class="o">**</span><span class="n">doi_info</span><span class="p">,</span> <span class="o">**</span><span class="n">avg_info</span><span class="p">})</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">})</span>
 </code></pre></div>
         </details>
@@ -1049,8 +1052,8 @@ data collected over all time.</p>
       <p>Return the trending progress over time for a given field. It will either use the top n publications or a given
 doi list.</p>
 <ul>
-<li><strong>field</strong>: list of strings with one of the following values: 'score' (default), 'count', 'median_sentiment',
-    'sum_follower', 'abstract_difference', 'median_age', 'median_length', 'mean_questions', 'mean_exclamations',
+<li><strong>field</strong>: list of strings with one of the following values: 'score' (default), 'count', 'mean_sentiment',
+    'sum_follower', 'abstract_difference', 'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations',
     'mean_bot_rating', 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev'</li>
 <li><strong>n</strong>: if no dois given use the top n dois (based on the current duration)</li>
 <li><strong>duration</strong>: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',
@@ -1070,8 +1073,8 @@ doi list.</p>
 <span class="sd">        Return the trending progress over time for a given field. It will either use the top n publications or a given</span>
 <span class="sd">        doi list.</span>
 
-<span class="sd">        - **field**: list of strings with one of the following values: &#39;score&#39; (default), &#39;count&#39;, &#39;median_sentiment&#39;,</span>
-<span class="sd">            &#39;sum_follower&#39;, &#39;abstract_difference&#39;, &#39;median_age&#39;, &#39;median_length&#39;, &#39;mean_questions&#39;, &#39;mean_exclamations&#39;,</span>
+<span class="sd">        - **field**: list of strings with one of the following values: &#39;score&#39; (default), &#39;count&#39;, &#39;mean_sentiment&#39;,</span>
+<span class="sd">            &#39;sum_follower&#39;, &#39;abstract_difference&#39;, &#39;mean_age&#39;, &#39;mean_length&#39;, &#39;mean_questions&#39;, &#39;mean_exclamations&#39;,</span>
 <span class="sd">            &#39;mean_bot_rating&#39;, &#39;projected_change&#39;, &#39;trending&#39;, &#39;ema&#39;, &#39;kama&#39;, &#39;ker&#39;, &#39;mean_score&#39;, &#39;stddev&#39;</span>
 <span class="sd">        - **n**: if no dois given use the top n dois (based on the current duration)</span>
 <span class="sd">        - **duration**: the duration of data that should be queried, &#39;currently&#39; (default), &#39;today&#39;, &#39;week&#39;, &#39;month&#39;,</span>
