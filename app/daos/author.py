@@ -78,9 +78,9 @@ def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sor
     q = """
     SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, *, count(*) OVER() AS total_count FROM (
           SELECT a.id, a.name, count(t.publication_doi) as pub_count,
-              SUM(t.score) as score, SUM(count) as count, AVG(median_sentiment) as median_sentiment,
+              SUM(t.score) as score, SUM(count) as count, AVG(mean_sentiment) as mean_sentiment,
               SUM(sum_followers) as sum_followers, AVG(abstract_difference) as abstract_difference,
-              AVG(median_age) as median_age, AVG(median_length) as median_length, AVG(mean_questions) as mean_questions,
+              AVG(mean_age) as mean_age, AVG(mean_length) as mean_length, AVG(mean_questions) as mean_questions,
               AVG(mean_exclamations) as mean_exclamations, AVG(mean_bot_rating) as mean_bot_rating,
               AVG(projected_change) as projected_change, AVG(trending) as trending, AVG(ema) as ema, AVG(kama) as kama,
               AVG(ker) as ker, AVG(mean_score) as mean_score, AVG(stddev) as stddev
@@ -91,8 +91,8 @@ def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sor
           WHERE duration = :duration
       """
 
-    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
-                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+    sortable = ['trending_ranking', 'score', 'count', 'mean_sentiment', 'sum_followers', 'abstract_difference',
+                'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
                 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'pub_count']
 
     qb = '  GROUP BY a.id) t ORDER BY  '

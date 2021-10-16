@@ -148,7 +148,7 @@ def get_profile_information_avg(session: Session, duration="currently"):
         FROM trending
         WHERE duration = :duration
         UNION
-        SELECT 'median_sentiment' as type, MIN(median_sentiment), MAX(median_sentiment), AVG(median_sentiment)
+        SELECT 'mean_sentiment' as type, MIN(mean_sentiment), MAX(mean_sentiment), AVG(mean_sentiment)
         FROM trending
         WHERE duration = :duration
         UNION
@@ -168,7 +168,7 @@ def get_profile_information_avg(session: Session, duration="currently"):
         FROM trending
         WHERE duration = :duration
         UNION
-        SELECT 'median_length' as type, MIN(median_length), MAX(median_length), AVG(median_length)
+        SELECT 'mean_length' as type, MIN(mean_length), MAX(mean_length), AVG(mean_length)
         FROM trending
         WHERE duration = :duration;
     """
@@ -350,27 +350,56 @@ def get_numbers_influx(query_api, dois, duration="currently", fields=None):
         '_bucket': trending_time_definition[duration]['name'],
     }
 
-    filter_obj = None
     if dois:
         filter_obj = doi_filter_list(dois, params)
 
-    for field in fields:
-        query += get_number_influx(filter_obj, duration, field)
-    # print(query)
-    a = time.time()
-    if dois:
-        # print(filter_obj['params'])
+        for field in fields:
+            query += get_number_influx(filter_obj, duration, field)
+
         tables = query_api.query(query, params=filter_obj['params'])
     else:
-        # print(params)
+        for field in fields:
+            query += get_task_number_influx(duration, field)
+
         tables = query_api.query(query, params=params)
 
-    # print(time.time() - a)
     result = {}
     for table in tables:
         for record in table.records:
             result[record['result']] = record['_value']
     return result
+
+
+def get_task_number_influx(duration="currently", field="score"):
+    aggregation_field = {
+        'bot_rating': 'mean',
+        'contains_abstract_raw': 'mean',
+        'exclamations': 'mean',
+        'followers': 'sum',
+        'length': 'mean',
+        'questions': 'mean',
+        'score': 'sum',
+        'sentiment_raw': 'mean',
+        "pub_count": "count",
+        "count": "count"
+    }
+
+    if field not in aggregation_field:
+        # print('not in field')
+        # return PlainTextResponse(content='field ' + field + ' not found')
+        return None
+
+    else:
+        query = field + ''' = from(bucket: "numbers")
+                |> range(start: _start, stop: _stop)
+                |> filter(fn: (r) => r["_measurement"] == "''' + duration + '''")
+                |> filter(fn: (r) => r["_field"] == "''' + field + '''")
+                |> last()
+                |> keep(columns: ["_value", "_time", "doi"])
+                |> yield(name: "''' + field + '''")
+                
+            '''
+        return query
 
 
 def get_number_influx(filter_obj, duration="currently", field="score"):
@@ -437,36 +466,44 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
         "_bucket": trending_time_definition[duration]['name'],
     }
     filter_obj = None
+
     if dois:
         filter_obj = doi_filter_list(dois, params)
+    else:
+        # without dois way to slow
+        return {}
     query = """
         import "math"
 
         _stop = now()
-        table = from(bucket: _bucket)
+        
+        score = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending") """
-    if filter_obj:
-        query += filter_obj['string']
-    query += """
-        score = table
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "score")
-          |> median()   
+          |> mean()   
           |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "median_score"})
+          |> rename(columns: {_value: "mean_score"})
     
-        sentiment = table
+        sentiment = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "sentiment_raw")
           |> mean()   
           |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "median_sentiment"})
+          |> rename(columns: {_value: "mean_sentiment"})
     
         j1 = join(
             tables: {score:score, sentiment:sentiment},
             on: ["doi"]
             )
     
-        follower = table
+        follower = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "followers")
           |> sum()   
           |> keep(columns: ["_value", "doi"])
@@ -477,18 +514,24 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
             on: ["doi"]
             )
     
-        abstract = table
+        abstract = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "contains_abstract_raw")
-          |> median()   
+          |> mean()   
           |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "median_abstract"})
+          |> rename(columns: {_value: "mean_abstract"})
     
         j3 = join(
             tables: {j2:j2, abstract:abstract},
             on: ["doi"]
             )
     
-        exclamations = table
+        exclamations = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+        """ + filter_obj['string'] + """  
+          |> filter(fn: (r) => r["_measurement"] == "trending")
           |> filter(fn: (r) => r["_field"] == "exclamations")
           |> mean()   
           |> keep(columns: ["_value", "doi"])
@@ -499,7 +542,10 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
             on: ["doi"]
             )
     
-        questions = table
+        questions = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "questions")
           |> mean()   
           |> keep(columns: ["_value", "doi"])
@@ -510,7 +556,10 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
             on: ["doi"]
             )
     
-        length = table
+        length = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "length")
           |> mean()   
           |> keep(columns: ["_value", "doi"])
@@ -521,7 +570,10 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
             on: ["doi"]
             )
 
-        bot = table
+        bot = from(bucket: _bucket)
+          |> range(start: _start, stop: _stop)
+          |> filter(fn: (r) => r["_measurement"] == "trending")
+        """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "bot_rating")
           |> mean()   
           |> keep(columns: ["_value", "doi"])
@@ -551,9 +603,9 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
                     'mean_exclamations': record['mean_exclamations'],
                     'mean_length': record['mean_length'],
                     'mean_questions': record['mean_questions'],
-                    'median_abstract': record['median_abstract'],
-                    'median_score': record['median_score'],
-                    'median_sentiment': record['median_sentiment'],
+                    'mean_abstract': record['mean_abstract'],
+                    'mean_score': record['mean_score'],
+                    'mean_sentiment': record['mean_sentiment'],
                     'sum_followers': record['sum_followers'],
                     'mean_bot_rating': record['mean_bot_rating'],
                 }
@@ -651,13 +703,13 @@ def get_top_n_trending_dois(query_api, duration="currently", field="count", n=5)
 def get_window_chart_data(query_api, duration="currently", field="score", n=5, dois=None):
     aggregation_field = {
         'bot_rating': 'mean',
-        'contains_abstract_raw': 'median',
+        'contains_abstract_raw': 'mean',
         'exclamations': 'mean',
         'followers': 'sum',
         'length': 'mean',
         'questions': 'mean',
         'score': 'sum',
-        'sentiment_raw': 'median',
+        'sentiment_raw': 'mean',
         "count": "count"
     }
 
@@ -683,9 +735,9 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
 
         # print(dois)
         doi_list = dois
-        if not dois or len(dois) == 0 or dois is None:
+        if not doi_list or len(doi_list) == 0 or doi_list is None:
             doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
-        if not dois or len(dois) == 0 or dois is None:
+        if not doi_list or len(doi_list) == 0 or doi_list is None:
             doi_list = get_top_n_dois(query_api, duration, "count", n)
         if len(doi_list) > n:
             doi_list = doi_list[0:n]
@@ -733,8 +785,8 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
 
 
 def get_trending_chart_data(query_api, duration="currently", field="score", n=5, dois=None):
-    fields = ['score', 'count', 'median_sentiment', 'sum_follower', 'abstract_difference', 'median_age',
-              'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating', 'projected_change',
+    fields = ['score', 'count', 'mean_sentiment', 'sum_follower', 'abstract_difference', 'mean_age',
+              'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating', 'projected_change',
               'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev']
 
     if field not in fields:
@@ -749,7 +801,7 @@ def get_trending_chart_data(query_api, duration="currently", field="score", n=5,
     }
 
     doi_list = dois
-    if not dois:
+    if not doi_list:
         doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
 
     if len(doi_list) > n:

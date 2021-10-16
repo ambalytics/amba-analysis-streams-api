@@ -57,9 +57,9 @@ def get_trending_authors_router(
 
         - **offset**: offset
         - **limit**: limit the result
-        - **sort**: field to use for sort, available: 'score', 'count', 'median_sentiment', 'sum_followers',
-                    'abstract_difference', 'tweet_author_diversity', 'lan_diversity', 'location_diversity', 'median_age',
-                    'median_length', 'avg_questions', 'avg_exclamations', 'projected_change'
+        - **sort**: field to use for sort, available: 'score', 'count', 'mean_sentiment', 'sum_followers',
+                    'abstract_difference', 'tweet_author_diversity', 'lan_diversity', 'location_diversity', 'mean_age',
+                    'mean_length', 'avg_questions', 'avg_exclamations', 'projected_change'
         - **order**: 'asc' or 'desc'
         - **search**: search keyword (title only)
         - **duration**: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',

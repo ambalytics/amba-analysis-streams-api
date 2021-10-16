@@ -28,6 +28,7 @@ class Publication(BaseModel):
     title: Optional[str]
     normalized_title: Optional[str]
     abstract: Optional[str]
+    license: Optional[str]
 
     class Config:
         orm_mode = True
@@ -162,11 +163,11 @@ class Trending(BaseModel):
     duration: Optional[str]
     score: Optional[float]
     count: Optional[int]
-    median_sentiment: Optional[float]
+    mean_sentiment: Optional[float]
     sum_followers: Optional[int]
     abstract_difference: Optional[float]
-    median_age: Optional[float]
-    median_length: Optional[float]
+    mean_age: Optional[float]
+    mean_length: Optional[float]
     mean_questions: Optional[float]
     mean_exclamations: Optional[float]
     mean_bot_rating: Optional[float]
