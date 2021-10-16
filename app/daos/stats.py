@@ -350,27 +350,56 @@ def get_numbers_influx(query_api, dois, duration="currently", fields=None):
         '_bucket': trending_time_definition[duration]['name'],
     }
 
-    filter_obj = None
     if dois:
         filter_obj = doi_filter_list(dois, params)
 
-    for field in fields:
-        query += get_number_influx(filter_obj, duration, field)
-    # print(query)
-    a = time.time()
-    if dois:
-        # print(filter_obj['params'])
+        for field in fields:
+            query += get_number_influx(filter_obj, duration, field)
+
         tables = query_api.query(query, params=filter_obj['params'])
     else:
-        # print(params)
+        for field in fields:
+            query += get_task_number_influx(duration, field)
+
         tables = query_api.query(query, params=params)
 
-    # print(time.time() - a)
     result = {}
     for table in tables:
         for record in table.records:
             result[record['result']] = record['_value']
     return result
+
+
+def get_task_number_influx(duration="currently", field="score"):
+    aggregation_field = {
+        'bot_rating': 'mean',
+        'contains_abstract_raw': 'mean',
+        'exclamations': 'mean',
+        'followers': 'sum',
+        'length': 'mean',
+        'questions': 'mean',
+        'score': 'sum',
+        'sentiment_raw': 'mean',
+        "pub_count": "count",
+        "count": "count"
+    }
+
+    if field not in aggregation_field:
+        # print('not in field')
+        # return PlainTextResponse(content='field ' + field + ' not found')
+        return None
+
+    else:
+        query = field + ''' = from(bucket: "numbers")
+                |> range(start: _start, stop: _stop)
+                |> filter(fn: (r) => r["_measurement"] == "''' + duration + '''")
+                |> filter(fn: (r) => r["_field"] == "''' + field + '''")
+                |> last()
+                |> keep(columns: ["_value", "_time", "doi"])
+                |> yield(name: "''' + field + '''")
+                
+            '''
+        return query
 
 
 def get_number_influx(filter_obj, duration="currently", field="score"):
