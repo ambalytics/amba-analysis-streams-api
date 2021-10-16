@@ -63,7 +63,7 @@ def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: s
 def get_trending_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
                               order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length, 
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length, 
         mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score, 
         stddev, count(*) OVER() AS total_count  FROM trending t
         JOIN publication p on p.doi = t.publication_doi
@@ -74,8 +74,8 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
         AND p.title ILIKE :search
     """
 
-    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
-                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+    sortable = ['trending_ranking', 'score', 'count', 'mean_sentiment', 'sum_followers', 'abstract_difference',
+                'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
                 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
 
     qb = ' ORDER BY  '
@@ -112,7 +112,7 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
                                                  sort: str = 'score',
                                                  order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
             stddev, count(*) OVER() AS total_count 
         FROM trending t
@@ -125,8 +125,8 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
         AND p.title ILIKE :search
     """
 
-    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
-                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+    sortable = ['trending_ranking', 'score', 'count', 'mean_sentiment', 'sum_followers', 'abstract_difference',
+                'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
                 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
 
     qb = ' ORDER BY  '
@@ -163,7 +163,7 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
                                                  sort: str = 'score',
                                                  order: str = 'desc', duration: int = 21600, search: str = ''):
     q = """
-        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, median_sentiment, sum_followers, abstract_difference, median_age, median_length,
+        SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
             stddev
         FROM trending t
@@ -176,8 +176,8 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
         AND p.title ILIKE :search
     """
 
-    sortable = ['trending_ranking', 'score', 'count', 'median_sentiment', 'sum_followers', 'abstract_difference',
-                'median_age', 'median_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+    sortable = ['trending_ranking', 'score', 'count', 'mean_sentiment', 'sum_followers', 'abstract_difference',
+                'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
                 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
 
     qb = ' ORDER BY  '
@@ -243,7 +243,7 @@ def retrieve_publication(session: Session, doi):
 # remove todo
 def get_trending_publication2s(session: Session, limit: int = 20):
     s = text("""
-        SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
+        SELECT p.*, t.score, count, mean_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, mean_age, mean_length, avg_questions, avg_exclamations, projected_change FROM trending t
         JOIN publication p on p.doi = t.publication_doi
         ORDER BY score DESC
                         LIMIT :limit""")
@@ -252,7 +252,7 @@ def get_trending_publication2s(session: Session, limit: int = 20):
     return session.execute(s, params).fetchall()
 
     trending_publications = """
-    SELECT p.*, t.score, count, median_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, median_age, median_length, avg_questions, avg_exclamations, projected_change FROM trending t
+    SELECT p.*, t.score, count, mean_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, mean_age, mean_length, avg_questions, avg_exclamations, projected_change FROM trending t
     JOIN publication p on p.doi = t.publication_doi
     ORDER BY score DESC
     LIMIT 10

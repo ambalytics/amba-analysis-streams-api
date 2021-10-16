@@ -148,9 +148,9 @@ def get_profile_information(dois: Optional[List[str]] = Query(None), duration: O
         raise HTTPException(status_code=404, detail="Missing data.")
 
     if mode == "fieldOfStudy" and id:
-        print('field of study ' + str(id))
+        # print('field of study ' + str(id))
         dois = get_dois_for_field_of_study(id, session, duration)
-        print(dois)
+        # print(dois)
 
     if mode == "author" and id:
         dois = get_dois_for_author(id, session, duration)
@@ -159,13 +159,16 @@ def get_profile_information(dois: Optional[List[str]] = Query(None), duration: O
         raise HTTPException(status_code=404, detail="Missing data.")
 
     doi_info = get_profile_information_for_doi(query_api, dois, duration)
-    if mode == "fieldOfStudy" and id:
+    if mode == "fieldOfStudy" and id and doi_info:
         doi_info['publication']['doi'] = retrieve_field_of_study(session, id)['fields_of_study']
-    if mode == "author" and id:
+    if mode == "author" and id and doi_info:
         doi_info['publication']['doi'] = retrieve_author(session, id)['author']
     avg_info = get_profile_information_avg(session, duration)
 
-    json_compatible_item_data = jsonable_encoder({**doi_info, **avg_info})
+    if doi_info and avg_info:
+        json_compatible_item_data = jsonable_encoder({**doi_info, **avg_info})
+    else:
+        json_compatible_item_data = {}
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 
 
@@ -211,8 +214,8 @@ def get_trending_progress(field: Optional[str] = Query(None), n: Optional[int] =
         Return the trending progress over time for a given field. It will either use the top n publications or a given
         doi list.
 
-        - **field**: list of strings with one of the following values: 'score' (default), 'count', 'median_sentiment',
-            'sum_follower', 'abstract_difference', 'median_age', 'median_length', 'mean_questions', 'mean_exclamations',
+        - **field**: list of strings with one of the following values: 'score' (default), 'count', 'mean_sentiment',
+            'sum_follower', 'abstract_difference', 'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations',
             'mean_bot_rating', 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev'
         - **n**: if no dois given use the top n dois (based on the current duration)
         - **duration**: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',
