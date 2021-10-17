@@ -353,14 +353,17 @@ def get_numbers_influx(query_api, dois, duration="currently", fields=None):
     if dois:
         filter_obj = doi_filter_list(dois, params)
 
+        # print('get numbers')
         for field in fields:
             query += get_number_influx(filter_obj, duration, field)
 
         tables = query_api.query(query, params=filter_obj['params'])
     else:
+        # print('get task numbers')
         for field in fields:
             query += get_task_number_influx(duration, field)
 
+        # print(query)
         tables = query_api.query(query, params=params)
 
     result = {}
@@ -663,44 +666,26 @@ def get_top_n_dois(query_api, duration="currently", field="count", n=5):
         return results
 
 
-def get_top_n_trending_dois(query_api, duration="currently", field="count", n=5):
-    if field == "count":
-        params = {
-            '_window_time': trending_time_definition[duration]['window_size'],
-            '_duration_time': timedelta(seconds=-trending_time_definition[duration]['duration'].total_seconds()),
-            '_bucket': trending_time_definition[duration]['trending_bucket'],
+def get_top_n_trending_dois(session: Session, duration="currently", n=5):
+    query = """
+            SELECT publication_doi FROM trending t WHERE duration = :duration ORDER BY score DESC LIMIT :n;
+            """
 
-            '_n': n,
-        }
-        query = """
-            import "experimental"
-            import "date"
+    params = {'duration': duration, 'n': n}
+    s = text(query)
+    s = s.bindparams(bindparam('duration'), bindparam('n'))
+    rows = session.execute(s, params).fetchall()
 
-            _start = experimental.subDuration(d: _duration_time, from: date.truncate(t: now(), unit: _window_time))
-            _stop =  date.truncate(t: now(), unit: _window_time)
+    result = []
+    for r in rows:
+        result.append(r[0])
 
-            a = from(bucket: _bucket)
-                |> range(start: _start, stop:  _stop)
-                |> filter(fn: (r) => r["_measurement"] == "trending")
-                |> filter(fn: (r) => r["_field"] == "score")
-                |> sum()
-                |> group()
-                |> sort(desc: true)
-                |> keep(columns: ["_value", "doi"])
-                |> rename(columns: {_value: "count"})   
-                |> limit(n: _n)
-                |> yield()
-        """
-
-        tables = query_api.query(query, params=params)
-        results = []
-        for table in tables:
-            for record in table.records:
-                results.append(record['doi'])
-        return results
+    # print(result)
+    return result
 
 
-def get_window_chart_data(query_api, duration="currently", field="score", n=5, dois=None):
+
+def get_window_chart_data(query_api, session: Session, duration="currently", field="score", n=5, dois=None):
     aggregation_field = {
         'bot_rating': 'mean',
         'contains_abstract_raw': 'mean',
@@ -736,7 +721,7 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
         # print(dois)
         doi_list = dois
         if not doi_list or len(doi_list) == 0 or doi_list is None:
-            doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
+            doi_list = get_top_n_trending_dois(session, duration, n)
         if not doi_list or len(doi_list) == 0 or doi_list is None:
             doi_list = get_top_n_dois(query_api, duration, "count", n)
         if len(doi_list) > n:
@@ -760,7 +745,7 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
              |> yield()
         """
         # print(query)
-        print(filter_obj['params'])
+        # print(filter_obj['params'])
 
         a = time.time()
         tables = query_api.query(query, params=filter_obj['params'])
@@ -784,7 +769,7 @@ def get_window_chart_data(query_api, duration="currently", field="score", n=5, d
         return results
 
 
-def get_trending_chart_data(query_api, duration="currently", field="score", n=5, dois=None):
+def get_trending_chart_data(query_api, session: Session, duration="currently", field="score", n=5, dois=None):
     fields = ['score', 'count', 'mean_sentiment', 'sum_follower', 'abstract_difference', 'mean_age',
               'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating', 'projected_change',
               'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev']
@@ -802,7 +787,7 @@ def get_trending_chart_data(query_api, duration="currently", field="score", n=5,
 
     doi_list = dois
     if not doi_list:
-        doi_list = get_top_n_trending_dois(query_api, duration, "count", n)
+        doi_list = get_top_n_trending_dois(session, duration, n)
 
     if len(doi_list) > n:
         doi_list = doi_list[0:n]
@@ -860,14 +845,9 @@ def doi_filter_list(doi_list, params):
 
 
 def system_running_check(query_api):
-    params = {
-        '_start': timedelta(minutes=-5),
-        '_bucket': trending_time_definition['currently']['trending_bucket'],
-    }
-
     query = """
-        from(bucket: _bucket)
-          |> range(start: _start)
+        from(bucket: "currently)
+          |> range(start: -5m)
           |> filter(fn: (r) => r["_measurement"] == "trending")
           |> filter(fn: (r) => r["_field"] == "score")
           |> group()
@@ -876,7 +856,7 @@ def system_running_check(query_api):
     """
     # print(query)
     # print(params)
-    tables = query_api.query(query, params=params)
+    tables = query_api.query(query)
     count = 0
     for table in tables:
         for record in table.records:
