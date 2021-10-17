@@ -353,14 +353,17 @@ def get_numbers_influx(query_api, dois, duration="currently", fields=None):
     if dois:
         filter_obj = doi_filter_list(dois, params)
 
+        print('get numbers')
         for field in fields:
             query += get_number_influx(filter_obj, duration, field)
 
         tables = query_api.query(query, params=filter_obj['params'])
     else:
+        print('get task numbers')
         for field in fields:
             query += get_task_number_influx(duration, field)
 
+        print(query)
         tables = query_api.query(query, params=params)
 
     result = {}
@@ -860,14 +863,9 @@ def doi_filter_list(doi_list, params):
 
 
 def system_running_check(query_api):
-    params = {
-        '_start': timedelta(minutes=-5),
-        '_bucket': trending_time_definition['currently']['trending_bucket'],
-    }
-
     query = """
-        from(bucket: _bucket)
-          |> range(start: _start)
+        from(bucket: "currently)
+          |> range(start: -5m)
           |> filter(fn: (r) => r["_measurement"] == "trending")
           |> filter(fn: (r) => r["_field"] == "score")
           |> group()
@@ -876,7 +874,7 @@ def system_running_check(query_api):
     """
     # print(query)
     # print(params)
-    tables = query_api.query(query, params=params)
+    tables = query_api.query(query)
     count = 0
     for table in tables:
         for record in table.records:
