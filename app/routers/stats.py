@@ -201,7 +201,7 @@ def get_window_progress(field: Optional[str] = Query(None), n: Optional[int] = 5
     if mode == "author" and id:
         dois = get_dois_for_author(id, session, duration)
 
-    json_compatible_item_data = get_window_chart_data(query_api, duration, field, n, dois)
+    json_compatible_item_data = get_window_chart_data(query_api, session, duration, field, n, dois)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 
 
@@ -235,7 +235,7 @@ def get_trending_progress(field: Optional[str] = Query(None), n: Optional[int] =
     if mode == "author" and id:
         dois = get_dois_for_author(id, session, duration)
 
-    json_compatible_item_data = get_trending_chart_data(query_api, duration, field, n, dois)
+    json_compatible_item_data = get_trending_chart_data(query_api, session, duration, field, n, dois)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 
 
