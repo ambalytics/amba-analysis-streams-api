@@ -9,21 +9,21 @@ from sqlalchemy.orm import Session  # type: ignore
 def get_tweet_author_count(doi, session: Session, id, mode="publication"):
     params = {}
     if mode == "fieldOfStudy":
-        query = """SELECT SUM(count) as count 
+        query = """SELECT count(id) as count 
                     FROM discussion_data_point as ddp
                          JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
                          JOIN publication_field_of_study as pfos on ddp.publication_doi = pfos.publication_doi
                     WHERE type = 'name' AND pfos.field_of_study_id=:id """
         params['id'] = id
     elif mode == "author":
-        query = """SELECT SUM(count) as count 
+        query = """SELECT count(id) as count 
                     FROM discussion_data_point as ddp
                          JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
                          JOIN publication_author as pfos on ddp.publication_doi = pfos.publication_doi
                     WHERE type = 'name'  AND pfos.author_id=:id """
         params['id'] = id
     else:  # default publication
-        query = """SELECT SUM(count) as count
+        query = """SELECT count(id) as count
                     FROM discussion_data_point as ddp
                          JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
                     WHERE type = 'name'  """
