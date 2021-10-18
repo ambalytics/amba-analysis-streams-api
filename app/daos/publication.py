@@ -61,7 +61,7 @@ def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: s
 
 
 def get_trending_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
-                              order: str = 'desc', duration: int = 21600, search: str = ''):
+                              order: str = 'desc', duration: str = "currently", search: str = ''):
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length, 
         mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score, 
@@ -110,7 +110,7 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
 
 def get_trending_publications_for_field_of_study(fos_id: int, session: Session, offset: int = 0, limit: int = 10,
                                                  sort: str = 'score',
-                                                 order: str = 'desc', duration: int = 21600, search: str = ''):
+                                                 order: str = 'desc', duration: str = "currently", search: str = ''):
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
@@ -160,8 +160,8 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
 
 
 def get_trending_publications_for_author(author_id: int, session: Session, offset: int = 0, limit: int = 10,
-                                                 sort: str = 'score',
-                                                 order: str = 'desc', duration: int = 21600, search: str = ''):
+                                         sort: str = 'score',
+                                         order: str = 'desc', duration: str = "currently", search: str = ''):
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
@@ -210,7 +210,7 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
     return session.execute(s, params).fetchall()
 
 
-def retrieve_publication(session: Session, doi):
+def retrieve_publication(session: Session, doi, duration: str = "currently"):
     pub = session.query(Publication).filter_by(doi=doi).all()
     a = text("""SELECT id, name FROM publication_author as p
                 JOIN author as a on (a.id = p.author_id)
@@ -232,11 +232,27 @@ def retrieve_publication(session: Session, doi):
     s = s.bindparams(bindparam('doi'))
     sources = session.execute(s, params).fetchall()
 
+    query = """
+        SELECT trending_ranking
+            FROM (SELECT ROW_NUMBER() OVER (ORDER BY score DESC) as trending_ranking, publication_doi FROM trending t
+        WHERE duration = :duration) t
+            WHERE publication_doi = :doi
+    """
+    params = {'duration': duration, 'doi': doi}
+    s = text(query).bindparams(bindparam('duration'), bindparam('doi'))
+    rank = session.execute(s, params).fetchone()
+
+    if rank:
+        r = rank[0]
+    else:
+        r = None
+
     return {
         'publication': pub,
         'authors': authors,
         'fields_of_study': fos,
         'sources': sources,
+        'trending_ranking': r
     }
 
 
@@ -271,4 +287,3 @@ def get_trending_publication2s(session: Session, limit: int = 20):
      JOIN publication p on p.doi = pfos.publication_doi
     LIMIT 10
     """
-
