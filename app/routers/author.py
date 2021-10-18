@@ -51,7 +51,7 @@ def get_authors_router(
 @router.get("/trending", summary="Get trending Authors.", response_model=AmbaResponse)
 def get_trending_authors_router(
         offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'desc', search: str = '',
-        session: Session = Depends(get_session)):
+        duration: str = "currently", session: Session = Depends(get_session)):
     """
         Return trending authors and their trending data for a given duration.
 
@@ -66,7 +66,8 @@ def get_trending_authors_router(
             'year'
     """
     start = time.time()
-    item = get_trending_authors(session=session, offset=offset, limit=limit, sort=sort, order=order, search=search)
+    item = get_trending_authors(session=session, offset=offset, limit=limit, sort=sort, order=order,
+                                duration=duration, search=search)
     json_compatible_item_data = jsonable_encoder(item)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 
