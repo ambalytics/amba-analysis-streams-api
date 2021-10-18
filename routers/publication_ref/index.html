@@ -706,7 +706,7 @@
 
 
 <h2 id="routers.publication.get_publication_data" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_publication_data</span><span class="p">(</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
+<code class="highlight language-python"><span class="n">get_publication_data</span><span class="p">(</span><span class="n">doi</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="s1">&#39;currently&#39;</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
 
 
 </h2>
@@ -721,7 +721,7 @@
         <details class="quote">
           <summary>Source code in <code>routers/publication.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/get&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Get publication.&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AmbaResponse</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">get_publication_data</span><span class="p">(</span><span class="n">doi</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">)):</span>
+<span class="k">def</span> <span class="nf">get_publication_data</span><span class="p">(</span><span class="n">doi</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;currently&quot;</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    get publication data for a given doi</span>
 
