@@ -5,6 +5,39 @@ from datetime import timedelta
 from sqlalchemy import text, bindparam
 from sqlalchemy.orm import Session  # type: ignore
 
+trending_time_definition = {
+    'currently': {
+        'name': 'currently',
+        'trending_bucket': 'trending_currently',
+        'duration': timedelta(hours=-6),
+        'window_size': timedelta(minutes=6),
+    },
+    'today': {
+        'name': 'today',
+        'trending_bucket': 'trending_today',
+        'duration': timedelta(hours=-24),
+        'window_size': timedelta(minutes=24),
+    },
+    'week': {
+        'name': 'week',
+        'trending_bucket': 'trending_week',
+        'duration': timedelta(days=-7),
+        'window_size': timedelta(minutes=168),
+    },
+    'month': {
+        'name': 'month',
+        'trending_bucket': 'trending_month',
+        'duration': timedelta(days=-30),
+        'window_size': timedelta(minutes=720),
+    },
+    'year': {
+        'name': 'year',
+        'trending_bucket': 'trending_year',
+        'duration': timedelta(days=-365),
+        'window_size': timedelta(minutes=8760),
+    },
+}
+
 
 def get_tweet_author_count(doi, session: Session, id, mode="publication"):
     params = {}
@@ -299,40 +332,6 @@ def get_discussion_data_list(session: Session, doi, limit, id, mode="publication
         s = s.bindparams(bindparam('type'))
 
     return session.execute(s, params).fetchall()
-
-
-trending_time_definition = {
-    'currently': {
-        'name': 'currently',
-        'trending_bucket': 'trending_currently',
-        'duration': timedelta(hours=-6),
-        'window_size': timedelta(minutes=6),
-    },
-    'today': {
-        'name': 'today',
-        'trending_bucket': 'trending_today',
-        'duration': timedelta(hours=-24),
-        'window_size': timedelta(minutes=24),
-    },
-    'week': {
-        'name': 'week',
-        'trending_bucket': 'trending_week',
-        'duration': timedelta(days=-7),
-        'window_size': timedelta(minutes=168),
-    },
-    'month': {
-        'name': 'month',
-        'trending_bucket': 'trending_month',
-        'duration': timedelta(days=-30),
-        'window_size': timedelta(minutes=720),
-    },
-    'year': {
-        'name': 'year',
-        'trending_bucket': 'trending_year',
-        'duration': timedelta(days=-365),
-        'window_size': timedelta(minutes=8760),
-    },
-}
 
 
 def get_numbers_influx(query_api, dois, duration="currently", fields=None):
@@ -682,7 +681,6 @@ def get_top_n_trending_dois(session: Session, duration="currently", n=5):
 
     # print(result)
     return result
-
 
 
 def get_window_chart_data(query_api, session: Session, duration="currently", field="score", n=5, dois=None):
