@@ -716,6 +716,8 @@
       <p>get publication data for a given doi</p>
 <ul>
 <li><strong>doi</strong>: doi of the publication to get</li>
+<li><strong>duration</strong>: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',
+    'year'</li>
 </ul>
 
         <details class="quote">
@@ -726,12 +728,14 @@
 <span class="sd">    get publication data for a given doi</span>
 
 <span class="sd">    - **doi**: doi of the publication to get</span>
+<span class="sd">    - **duration**: the duration of data that should be queried, &#39;currently&#39; (default), &#39;today&#39;, &#39;week&#39;, &#39;month&#39;,</span>
+<span class="sd">        &#39;year&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;retrieve publication &#39;</span> <span class="o">+</span> <span class="n">doi</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;retrieve publication &#39;</span> <span class="o">+</span> <span class="n">unquote</span><span class="p">(</span><span class="n">doi</span><span class="p">))</span>
 
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    <span class="n">publication</span> <span class="o">=</span> <span class="n">retrieve_publication</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">doi</span><span class="p">)</span>
+    <span class="n">publication</span> <span class="o">=</span> <span class="n">retrieve_publication</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">doi</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">publication</span><span class="p">)</span>
     <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">jsonable_encoder</span><span class="p">(</span><span class="n">publication</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">})</span>
