@@ -139,12 +139,14 @@ def get_publication_data(doi: str, duration: str = "currently", session: Session
     get publication data for a given doi
 
     - **doi**: doi of the publication to get
+    - **duration**: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',
+        'year'
     """
     logging.warning('retrieve publication ' + doi)
     logging.warning('retrieve publication ' + unquote(doi))
 
     start = time.time()
-    publication = retrieve_publication(session, doi)
+    publication = retrieve_publication(session, doi, duration)
     logging.warning(publication)
     json_compatible_item_data = jsonable_encoder(publication)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
