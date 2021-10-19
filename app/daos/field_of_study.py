@@ -1,14 +1,9 @@
-import logging
-
-from typing import List
 from sqlalchemy import text, bindparam
-from sqlalchemy import asc, desc
-from event_stream.models.model import Publication, PublicationAuthor
-from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 
 def retrieve_field_of_study(session: Session, id, with_pubs=False):
+    """ retrieve field of study from postgres """
     params = {'id': id}
     f = text("""SELECT name FROM field_of_study WHERE id=:id""")
     f = f.bindparams(bindparam('id'))
@@ -31,6 +26,7 @@ def retrieve_field_of_study(session: Session, id, with_pubs=False):
 
 def get_fields_of_study(session: Session, offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc',
                         search: str = ''):
+    """ retrieve fields of study from postgres """
     q = """
          SELECT fos.*, array_agg('{name: "' || p.title || '", doi: "' || p.doi || '", date: "' || p.pub_date || '"}') FROM field_of_study fos
              JOIN publication_field_of_study pfos on pfos.field_of_study_id = fos.id
@@ -75,6 +71,7 @@ def get_fields_of_study(session: Session, offset: int = 0, limit: int = 10, sort
 
 def get_trending_fields_of_study(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
                                  order: str = 'desc', search: str = '', duration: str = 'currently'):
+    """ retrieve field of study from postgres """
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, *, count(*) OVER() AS total_count FROM (
             SELECT fos.id, fos.name, count(t.publication_doi) as pub_count,

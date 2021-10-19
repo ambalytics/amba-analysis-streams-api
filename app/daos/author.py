@@ -9,6 +9,12 @@ from sqlalchemy.orm import Session
 
 
 def retrieve_author(session: Session, id, with_pubs=False):
+    """
+    get author data for from postresql
+
+    - **id**: author id
+    - **with_pubs**: include publication
+    """
     params = {'id': id}
     f = text("""SELECT name FROM author WHERE id=:id""")
     f = f.bindparams(bindparam('id'))
@@ -31,6 +37,9 @@ def retrieve_author(session: Session, id, with_pubs=False):
 
 def get_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc',
                      search: str = ''):
+    """
+    get authors from postresql
+    """
     q = """
          SELECT a.*, array_agg('{name: "' || p.title || '", doi: "' || p.doi || '", date: "' || p.pub_date || '"}') FROM author a
              JOIN publication_author pfos on pfos.author_id = a.id
@@ -75,6 +84,8 @@ def get_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 
 
 def get_trending_authors(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'asc',
                          search: str = '', duration: str = "currently"):
+    """ get trending authors from postgresql
+    """
     q = """
     SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, *, count(*) OVER() AS total_count FROM (
           SELECT a.id, a.name, count(t.publication_doi) as pub_count,

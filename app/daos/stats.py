@@ -1,10 +1,9 @@
-import json
 import time
 from datetime import timedelta
-
 from sqlalchemy import text, bindparam
 from sqlalchemy.orm import Session  # type: ignore
 
+# time definitions used by influxdb
 trending_time_definition = {
     'currently': {
         'name': 'currently',
@@ -40,6 +39,7 @@ trending_time_definition = {
 
 
 def get_tweet_author_count(doi, session: Session, id, mode="publication"):
+    """ get tweet author count from postgresql """
     params = {}
     if mode == "fieldOfStudy":
         query = """SELECT count(id) as count 
@@ -76,6 +76,7 @@ def get_tweet_author_count(doi, session: Session, id, mode="publication"):
 
 
 def get_tweets(doi, session: Session, id, mode="publication"):
+    """ get newest tweet from postgresql """
     params = {}
     query = """  
          SELECT p.*, p.title, p.abstract, discussion_newest_subj.*
@@ -130,6 +131,7 @@ def get_tweets(doi, session: Session, id, mode="publication"):
 
 
 def get_dois_for_field_of_study(id, session: Session, duration="currently"):
+    """ get dois for a given field of study from postgresql """
     query = """
         SELECT t.publication_doi
         FROM trending t
@@ -151,6 +153,7 @@ def get_dois_for_field_of_study(id, session: Session, duration="currently"):
 
 
 def get_dois_for_author(id, session: Session, duration="currently"):
+    """ get dois for a given author from postgresql """
     query = """
         SELECT t.publication_doi
         FROM trending t
@@ -172,6 +175,7 @@ def get_dois_for_author(id, session: Session, duration="currently"):
 
 
 def get_profile_information_avg(session: Session, duration="currently"):
+    """ get profile information avg, min, max from postgresql """
     query = """
         SELECT 'mean_score' as type, MIN(mean_score), MAX(mean_score), AVG(mean_score)
         FROM trending
@@ -221,6 +225,7 @@ def get_profile_information_avg(session: Session, duration="currently"):
 
 def get_discussion_data_list_with_percentage(session: Session, doi, limit: int = 20, min_percentage: float = 1,
                                              dd_type="lang"):
+    """ get discussion types with count an percentage from postgresql """
     query = """
             WITH result AS
                      (
@@ -282,6 +287,7 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
 
 
 def get_discussion_data_list(session: Session, doi, limit, id, mode="publication", dd_type="word"):
+    """ get discussion types with count from postgresql """
     params = {'type': dd_type}
     if mode == "fieldOfStudy":
         query = """SELECT SUM(ddp.count) as count, dd.value
@@ -335,6 +341,7 @@ def get_discussion_data_list(session: Session, doi, limit, id, mode="publication
 
 
 def get_numbers_influx(query_api, dois, duration="currently", fields=None):
+    """ get numbers from influx, switch between getting (total) and calculating (for dois) """
     if fields is None:
         fields = ["score"]
 
@@ -373,6 +380,7 @@ def get_numbers_influx(query_api, dois, duration="currently", fields=None):
 
 
 def get_task_number_influx(duration="currently", field="score"):
+    """ get number from task (own bucket for total numbers, returns string query) """
     aggregation_field = {
         'bot_rating': 'mean',
         'contains_abstract_raw': 'mean',
@@ -405,6 +413,7 @@ def get_task_number_influx(duration="currently", field="score"):
 
 
 def get_number_influx(filter_obj, duration="currently", field="score"):
+    """ get influx number for specific dois calculating, returns string query"""
     aggregation_field = {
         'bot_rating': 'mean',
         'contains_abstract_raw': 'mean',
@@ -463,6 +472,7 @@ def get_number_influx(filter_obj, duration="currently", field="score"):
 
 # extend this by newest trending data?
 def get_profile_information_for_doi(query_api, dois, duration="currently"):
+    """ get profile information for a doi calculated by influxdb"""
     params = {
         "_start": trending_time_definition[duration]['duration'],
         "_bucket": trending_time_definition[duration]['name'],
@@ -615,7 +625,9 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
             return result
 
 
+# todo check remove
 def fetch_with_doi_filter(session: Session, query, doi):
+    """ postresql helper to add a doi filter """
     if doi:
         query += 'WHERE publication_doi=:doi'
         params = {'doi': doi, }
@@ -627,6 +639,7 @@ def fetch_with_doi_filter(session: Session, query, doi):
 
 
 def get_top_n_dois(query_api, duration="currently", field="count", n=5):
+    """ get top n dois by count, expensive query, influx db """
     if field == "count":
         params = {
             '_window_time': trending_time_definition[duration]['window_size'],
@@ -666,6 +679,7 @@ def get_top_n_dois(query_api, duration="currently", field="count", n=5):
 
 
 def get_top_n_trending_dois(session: Session, duration="currently", n=5):
+    """ get top trending dois, postgresql """
     query = """
             SELECT publication_doi FROM trending t WHERE duration = :duration ORDER BY score DESC LIMIT :n;
             """
@@ -684,6 +698,7 @@ def get_top_n_trending_dois(session: Session, duration="currently", n=5):
 
 
 def get_window_chart_data(query_api, session: Session, duration="currently", field="score", n=5, dois=None):
+    """ get window value data for given dois over a period of time from influx, mainly used for charts """
     aggregation_field = {
         'bot_rating': 'mean',
         'contains_abstract_raw': 'mean',
@@ -768,6 +783,7 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
 
 
 def get_trending_chart_data(query_api, session: Session, duration="currently", field="score", n=5, dois=None):
+    """ get trending data for given dois over a period of time from influx, mainly used for charts """
     fields = ['score', 'count', 'mean_sentiment', 'sum_follower', 'abstract_difference', 'mean_age',
               'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating', 'projected_change',
               'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev']
@@ -829,6 +845,7 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
 
 
 def doi_filter_list(doi_list, params):
+    """ influx helper adding a doi filter list (faster than array check in influx) """
     if doi_list:
         filter_string = """
                 |> filter(fn: (r) => """
@@ -843,6 +860,8 @@ def doi_filter_list(doi_list, params):
 
 
 def system_running_check(query_api):
+    """ check if the system is running correctly by counting how many tweets we got in the last 5 minutes,
+        if over 10 than ok"""
     query = """
         from(bucket: "currently)
           |> range(start: -5m)

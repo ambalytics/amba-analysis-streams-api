@@ -44,7 +44,7 @@ Utilities.
 app = FastAPI(
     title="ambalytics analysis streams api",
     description=description,
-    version="0.0.1",
+    version="0.9.1",
     terms_of_service="https://ambalytics.com/",
     contact={
         "name": "Lukas Jesche",

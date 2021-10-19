@@ -1,16 +1,10 @@
-import logging
-from datetime import timedelta
-
-from typing import List
 from sqlalchemy import text, bindparam
-from sqlalchemy import asc, desc
 from event_stream.models.model import Publication, PublicationAuthor
-from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 
 def query_bottom(session, q, qs, qb, order, limit, offset, search):
-    # only allow set string to avoid sql injection
+    """ query helper adding limit, sorting and search (postgresql only) """
     order_sql = ' ASC '
     if order == 'desc':
         order_sql = ' DESC '
@@ -36,6 +30,7 @@ def query_bottom(session, q, qs, qb, order, limit, offset, search):
 
 def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc',
                      search: str = ''):
+    """ get publications from postgresql """
     q = """
         SELECT p.*, array_agg(a.id || ': ' || a.name), array_agg(fos.id || ': ' || fos.name) FROM publication p
             JOIN publication_author pa on p.doi = pa.publication_doi
@@ -62,6 +57,7 @@ def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: s
 
 def get_trending_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
                               order: str = 'desc', duration: str = "currently", search: str = ''):
+    """ get trending publications from postgresql """
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length, 
         mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score, 
@@ -111,6 +107,7 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
 def get_trending_publications_for_field_of_study(fos_id: int, session: Session, offset: int = 0, limit: int = 10,
                                                  sort: str = 'score',
                                                  order: str = 'desc', duration: str = "currently", search: str = ''):
+    """ get trending publications for a given field of study from postgresql """
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
@@ -162,6 +159,7 @@ def get_trending_publications_for_field_of_study(fos_id: int, session: Session, 
 def get_trending_publications_for_author(author_id: int, session: Session, offset: int = 0, limit: int = 10,
                                          sort: str = 'score',
                                          order: str = 'desc', duration: str = "currently", search: str = ''):
+    """ get trending publications for a given author from postgresql """
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
@@ -211,6 +209,7 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
 
 
 def retrieve_publication(session: Session, doi, duration: str = "currently"):
+    """ get publication data including rank, fos, sources, authors from postgresql """
     pub = session.query(Publication).filter_by(doi=doi).all()
     a = text("""SELECT id, name FROM publication_author as p
                 JOIN author as a on (a.id = p.author_id)
@@ -254,36 +253,3 @@ def retrieve_publication(session: Session, doi, duration: str = "currently"):
         'sources': sources,
         'trending_ranking': r
     }
-
-
-# remove todo
-def get_trending_publication2s(session: Session, limit: int = 20):
-    s = text("""
-        SELECT p.*, t.score, count, mean_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, mean_age, mean_length, avg_questions, avg_exclamations, projected_change FROM trending t
-        JOIN publication p on p.doi = t.publication_doi
-        ORDER BY score DESC
-                        LIMIT :limit""")
-    params = {'limit': limit, }
-    s = s.bindparams(bindparam('limit'))
-    return session.execute(s, params).fetchall()
-
-    trending_publications = """
-    SELECT p.*, t.score, count, mean_sentiment, sum_follower, abstract_difference, tweet_author_diversity, lan_diversity, location_diversity, mean_age, mean_length, avg_questions, avg_exclamations, projected_change FROM trending t
-    JOIN publication p on p.doi = t.publication_doi
-    ORDER BY score DESC
-    LIMIT 10
-    """
-
-    authors_with_publications = """
-    SELECT * FROM author a
-     JOIN publication_author pa on pa.author_id = a.id
-     JOIN publication p on p.doi = pa.publication_doi
-    LIMIT 10
-    """
-
-    fos_with_publications = """
-    SELECT * FROM field_of_study fos
-     JOIN publication_field_of_study pfos on pfos.field_of_study_id = fos.id
-     JOIN publication p on p.doi = pfos.publication_doi
-    LIMIT 10
-    """
