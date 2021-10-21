@@ -495,108 +495,81 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "score")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_score"})
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_score")
     
         sentiment = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "sentiment_raw")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_sentiment"})
-    
-        j1 = join(
-            tables: {score:score, sentiment:sentiment},
-            on: ["doi"]
-            )
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_sentiment")
     
         follower = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "followers")
-          |> experimental.sum()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "sum_followers"})
-    
-        j2 = join(
-            tables: {j1:j1, follower:follower},
-            on: ["doi"]
-            )
+          |> group()
+          |> sum()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "sum_followers")
     
         abstract = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "contains_abstract_raw")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_abstract"})
-    
-        j3 = join(
-            tables: {j2:j2, abstract:abstract},
-            on: ["doi"]
-            )
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_abstract")
     
         exclamations = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_measurement"] == "trending")
           |> filter(fn: (r) => r["_field"] == "exclamations")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_exclamations"})
-    
-        j4 = join(
-            tables: {j3:j3, exclamations:exclamations},
-            on: ["doi"]
-            )
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_exclamations")
+  
     
         questions = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "questions")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_questions"})
-    
-        j5 = join(
-            tables: {j4:j4, questions:questions},
-            on: ["doi"]
-            )
-    
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_questions")
+
         length = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "length")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_length"})
-    
-        j6 = join(
-            tables: {j5:j5, length:length},
-            on: ["doi"]
-            )
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_length")
 
         bot = from(bucket: _bucket)
           |> range(start: _start, stop: _stop)
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "bot_rating")
-          |> experimental.mean()   
-          |> keep(columns: ["_value", "doi"])
-          |> rename(columns: {_value: "mean_bot_rating"})
-        
-        j7 = join(
-            tables: {j6:j6, bot:bot},
-            on: ["doi"]
-            )
-          |> yield()
+          |> group()
+          |> mean()   
+          |> keep(columns: ["_value"])
+          |> yield(name: "mean_bot_rating")
         """
 
     print(query)
@@ -608,22 +581,15 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
         print(params)
         tables = query_api.query(query, params=params)
 
+    result = {
+        'publication': {}
+    }
+
     for table in tables:
         for record in table.records:
-            result = {
-                'publication': {
-                    'doi': record['doi'],
-                    'mean_exclamations': record['mean_exclamations'],
-                    'mean_length': record['mean_length'],
-                    'mean_questions': record['mean_questions'],
-                    'mean_abstract': record['mean_abstract'],
-                    'mean_score': record['mean_score'],
-                    'mean_sentiment': record['mean_sentiment'],
-                    'sum_followers': record['sum_followers'],
-                    'mean_bot_rating': record['mean_bot_rating'],
-                }
-            }
-            return result
+            result['publication'][record['result']] = record['_value']
+
+    return result
 
 
 # todo check remove
