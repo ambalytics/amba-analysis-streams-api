@@ -7,6 +7,7 @@ import os
 import urllib
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base  # only for doc?
 from event_stream.models.model import *
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
