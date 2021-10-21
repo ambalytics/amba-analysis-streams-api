@@ -477,7 +477,12 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
                AVG(mean_score) mean_score,
                AVG(abstract_difference) abstract_difference,
                AVG(mean_sentiment) mean_sentiment,
-               SUM(sum_followers) sum_followers,
+        """
+    if mode == "publication":
+        query += "SUM(sum_followers) sum_followers,"
+    else:
+        query += "AVG(sum_followers) sum_followers,"
+    query += """
                AVG(mean_length) mean_length,
                AVG(mean_questions) mean_questions,
                AVG(mean_exclamations) mean_exclamations,
@@ -499,10 +504,6 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
     if mode == "fieldOfStudy":
         query += "AND field_of_study_id = :id"
         params['id'] = id
-
-    if doi:
-        query += 'AND publication_doi=:doi '
-        params['doi'] = doi
 
     s = text(query)
     # print(query)
