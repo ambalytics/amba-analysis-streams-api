@@ -147,7 +147,9 @@ def get_profile_information(doi: Optional[str] = Query(None), duration: Optional
     if (mode == "publication" and not doi) or (mode == "fieldOfStudy" and not id) or (mode == "author" and not id):
         raise HTTPException(status_code=404, detail="Missing data.")
 
-    doi_info = {'publication': get_profile_information_for_doi(session, doi, id, mode, duration)}
+    doi_info = {
+        'publication': get_profile_information_for_doi(session, doi, id, mode, duration)
+    }
 
     if mode == "publication" and doi and doi_info:
         doi_info['publication']['doi'] = doi
