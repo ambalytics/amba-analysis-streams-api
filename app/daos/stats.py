@@ -513,7 +513,7 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
     elif 'doi' in params:
         s = s.bindparams(bindparam('duration'), bindparam('doi'))
 
-    return session.execute(s, params).fetchone()
+    return session.execute(s, params).fetchone()._asdict()
 
 # todo check remove
 def fetch_with_doi_filter(session: Session, query, doi):
