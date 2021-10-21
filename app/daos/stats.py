@@ -486,7 +486,8 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
         return {}
     query = """
         import "math"
-
+        import "experimental"
+        
         _stop = now()
         
         score = from(bucket: _bucket)
@@ -494,7 +495,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "score")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_score"})
     
@@ -503,7 +504,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "sentiment_raw")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_sentiment"})
     
@@ -517,7 +518,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "followers")
-          |> sum()   
+          |> experimental.sum()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "sum_followers"})
     
@@ -531,7 +532,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "contains_abstract_raw")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_abstract"})
     
@@ -545,7 +546,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_measurement"] == "trending")
           |> filter(fn: (r) => r["_field"] == "exclamations")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_exclamations"})
     
@@ -559,7 +560,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "questions")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_questions"})
     
@@ -573,7 +574,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "length")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_length"})
     
@@ -587,7 +588,7 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> filter(fn: (r) => r["_measurement"] == "trending")
         """ + filter_obj['string'] + """  
           |> filter(fn: (r) => r["_field"] == "bot_rating")
-          |> mean()   
+          |> experimental.mean()   
           |> keep(columns: ["_value", "doi"])
           |> rename(columns: {_value: "mean_bot_rating"})
         
@@ -598,13 +599,13 @@ def get_profile_information_for_doi(query_api, dois, duration="currently"):
           |> yield()
         """
 
-    # print(query)
+    print(query)
 
     if dois:
-        # print(filter_obj['params'])
+        print(filter_obj['params'])
         tables = query_api.query(query, params=filter_obj['params'])
     else:
-        # print(params)
+        print(params)
         tables = query_api.query(query, params=params)
 
     for table in tables:
@@ -784,7 +785,7 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
 
 def get_trending_chart_data(query_api, session: Session, duration="currently", field="score", n=5, dois=None):
     """ get trending data for given dois over a period of time from influx, mainly used for charts """
-    fields = ['score', 'count', 'mean_sentiment', 'sum_follower', 'abstract_difference', 'mean_age',
+    fields = ['score', 'count', 'mean_sentiment', 'sum_followers', 'abstract_difference', 'mean_age',
               'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating', 'projected_change',
               'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev']
 
