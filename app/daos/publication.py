@@ -32,7 +32,7 @@ def get_publications(session: Session, offset: int = 0, limit: int = 10, sort: s
                      search: str = ''):
     """ get publications from postgresql """
     q = """
-        SELECT p.*, array_agg(a.id || ': ' || a.name), array_agg(fos.id || ': ' || fos.name) FROM publication p
+        SELECT p.*, array_agg(a.id || ': ' || a.name), array_agg(fos.id || ': ' || fos.name), count(*) OVER() AS total_count FROM publication p
             JOIN publication_author pa on p.doi = pa.publication_doi
             JOIN author as a on pa.author_id = a.id
             JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
@@ -108,7 +108,7 @@ def get_trending_covid_publications(session: Session, offset: int = 0, limit: in
                               order: str = 'desc', duration: str = "currently", search: str = ''):
     """ get trending covid publications from postgresql """
     q = """
-        SELECT * FROM trending_covid_papers
+        SELECT *, count(*) OVER() AS total_count FROM trending_covid_papers
         WHERE duration = :duration
         """
 
@@ -209,7 +209,7 @@ def get_trending_publications_for_author(author_id: int, session: Session, offse
     q = """
         SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, p.*, t.score, count, mean_sentiment, sum_followers, abstract_difference, mean_age, mean_length,
             mean_questions, mean_exclamations, mean_bot_rating, projected_change, trending, ema, kama, ker, mean_score,
-            stddev
+            stddev, count(*) OVER() AS total_count
         FROM trending t
             JOIN publication p on p.doi = t.publication_doi
             JOIN publication_author pa on p.doi = pa.publication_doi
