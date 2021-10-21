@@ -130,7 +130,7 @@ def get_top_percentage_values(fields: Optional[List[str]] = Query(None), doi: Op
 
 # get profile information for a publication by doi
 @router.get("/profile", summary="Get top profile information.", response_model=AmbaResponse)
-def get_profile_information(dois: Optional[List[str]] = Query(None), duration: Optional[str] = "currently",
+def get_profile_information(doi: Optional[str] = Query(None), duration: Optional[str] = "currently",
                             mode: str = "publication", id: int = None, session: Session = Depends(get_session)):
     """
         Return profile information meaning it will not only return the value of the doi, author or field of study but
@@ -144,21 +144,13 @@ def get_profile_information(dois: Optional[List[str]] = Query(None), duration: O
     """
     start = time.time()
 
-    if (mode == "publication" and not dois) or (mode == "fieldOfStudy" and not id) or (mode == "author" and not id):
+    if (mode == "publication" and not doi) or (mode == "fieldOfStudy" and not id) or (mode == "author" and not id):
         raise HTTPException(status_code=404, detail="Missing data.")
 
-    if mode == "fieldOfStudy" and id:
-        # print('field of study ' + str(id))
-        dois = get_dois_for_field_of_study(id, session, duration)
-        # print(dois)
+    doi_info = {'publication': get_profile_information_for_doi(session, doi, id, mode, duration)}
 
-    if mode == "author" and id:
-        dois = get_dois_for_author(id, session, duration)
-
-    if len(dois) == 0:
-        raise HTTPException(status_code=404, detail="Missing data.")
-
-    doi_info = get_profile_information_for_doi(query_api, dois, duration)
+    if mode == "publication" and doi and doi_info:
+        doi_info['publication']['doi'] = doi
     if mode == "fieldOfStudy" and id and doi_info:
         doi_info['publication']['doi'] = retrieve_field_of_study(session, id)['fields_of_study']
     if mode == "author" and id and doi_info:

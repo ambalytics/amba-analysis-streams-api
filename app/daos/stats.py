@@ -470,127 +470,50 @@ def get_number_influx(filter_obj, duration="currently", field="score"):
         return query
 
 
-# extend this by newest trending data?
-def get_profile_information_for_doi(query_api, dois, duration="currently"):
-    """ get profile information for a doi calculated by influxdb"""
-    params = {
-        "_start": trending_time_definition[duration]['duration'],
-        "_bucket": trending_time_definition[duration]['name'],
-    }
-    filter_obj = None
-
-    if dois:
-        filter_obj = doi_filter_list(dois, params)
-    else:
-        # without dois way to slow
-        return {}
+def get_profile_information_for_doi(session: Session, doi, id, mode="publication", duration="currently"):
+    """ get profile information for a doi, fieldOfStudy or Author"""
     query = """
-        import "math"
-        import "experimental"
-        
-        _stop = now()
-        
-        score = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "score")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_score")
-    
-        sentiment = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "sentiment_raw")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_sentiment")
-    
-        follower = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "followers")
-          |> group()
-          |> sum()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "sum_followers")
-    
-        abstract = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "contains_abstract_raw")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_abstract")
-    
-        exclamations = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-          |> filter(fn: (r) => r["_field"] == "exclamations")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_exclamations")
-  
-    
-        questions = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "questions")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_questions")
+        SELECT
+               AVG(mean_score) mean_score,
+               AVG(abstract_difference) abstract_difference,
+               AVG(mean_sentiment) mean_sentiment,
+               SUM(sum_followers) sum_followers,
+               AVG(mean_length) mean_length,
+               AVG(mean_questions) mean_questions,
+               AVG(mean_exclamations) mean_exclamations,
+               AVG(mean_bot_rating) mean_bot_rating
+        FROM trending t
+                 JOIN publication p on p.doi = t.publication_doi
+                 JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
+                 JOIN publication_author pa on p.doi = pa.publication_doi
+        WHERE duration = :duration
+    """
 
-        length = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "length")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_length")
+    params = {'duration': duration}
+    if mode == "publication":
+        query += "AND doi = :doi"
+        params['doi'] = doi
+    if mode == "author":
+        query += "AND author_id = :id"
+        params['id'] = id
+    if mode == "fieldOfStudy":
+        query += "AND field_of_study_id = :id"
+        params['id'] = id
 
-        bot = from(bucket: _bucket)
-          |> range(start: _start, stop: _stop)
-          |> filter(fn: (r) => r["_measurement"] == "trending")
-        """ + filter_obj['string'] + """  
-          |> filter(fn: (r) => r["_field"] == "bot_rating")
-          |> group()
-          |> mean()   
-          |> keep(columns: ["_value"])
-          |> yield(name: "mean_bot_rating")
-        """
+    if doi:
+        query += 'AND publication_doi=:doi '
+        params['doi'] = doi
 
-    print(query)
+    s = text(query)
+    # print(query)
+    # print(params)
 
-    if dois:
-        print(filter_obj['params'])
-        tables = query_api.query(query, params=filter_obj['params'])
-    else:
-        print(params)
-        tables = query_api.query(query, params=params)
+    if 'id' in params:
+        s = s.bindparams(bindparam('duration'), bindparam('id'))
+    elif 'doi' in params:
+        s = s.bindparams(bindparam('duration'), bindparam('doi'))
 
-    result = {
-        'publication': {}
-    }
-
-    for table in tables:
-        for record in table.records:
-            result['publication'][record['result']] = record['_value']
-
-    return result
-
+    return session.execute(s, params).fetchone()
 
 # todo check remove
 def fetch_with_doi_filter(session: Session, query, doi):
