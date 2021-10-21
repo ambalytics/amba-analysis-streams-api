@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+import time
+from datetime import datetime
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import sentry_sdk
@@ -8,7 +10,7 @@ from app.routers.stats import router as StatsRouter
 from app.routers.field_of_study import router as FieldOfStudyRouter
 from app.routers.author import router as AuthorRouter
 from starlette.responses import JSONResponse
-from app.daos.database import query_api
+from app.daos.database import SessionLocal, engine, query_api, write_api, org
 
 from app.daos.stats import (
     system_running_check,
@@ -44,7 +46,7 @@ Utilities.
 app = FastAPI(
     title="ambalytics analysis streams api",
     description=description,
-    version="0.0.1",
+    version="0.9.1",
     terms_of_service="https://ambalytics.com/",
     contact={
         "name": "Lukas Jesche",
@@ -79,6 +81,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    point = {
+        "measurement": "response_time",
+        "tags": {
+            "path": request.url.path
+        },
+        "fields": {
+            'response_time': int(process_time * 1000),
+            'url': str(request.url)
+        },
+        "time": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}
+
+    print(point)
+    write_api.write('api_monitor', org, [point])
+    return response
+
 
 app.include_router(PublicationRouter, tags=["Publication"], prefix="/api/trend/publication")
 app.include_router(FieldOfStudyRouter, tags=["FieldOfStudy"], prefix="/api/trend/fieldOfStudy")

@@ -14,6 +14,7 @@ from app.daos.publication import (
     get_publications,
     get_trending_publications,
     get_trending_publications_for_field_of_study,
+    get_trending_covid_publications,
     get_trending_publications_for_author
 )
 import event_stream.models.model as models
@@ -71,6 +72,31 @@ def get_trending_publications_router(
     """
     start = time.time()
     item = get_trending_publications(session=session, offset=offset, limit=limit, sort=sort, order=order,
+                                     duration=duration, search=search)
+    json_compatible_item_data = jsonable_encoder(item)
+    return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
+
+
+@router.get("/trending/covid", summary="Get trending covid publications.", response_model=AmbaResponse)
+def get_trending__covid_publications_router(
+        offset: int = 0, limit: int = 10, sort: str = 'score', order: str = 'desc', search: str = '',
+        duration: str = "currently", session: Session = Depends(get_session)
+):
+    """
+    Return covid related publication trending data for a given duration.
+
+    - **offset**: offset
+    - **limit**: limit the result
+    - **sort**: field to use for sort, available: 'score', 'count', 'mean_sentiment', 'sum_followers',
+                'abstract_difference', 'tweet_author_diversity', 'lan_diversity', 'location_diversity', 'mean_age',
+                'mean_length', 'avg_questions', 'avg_exclamations', 'projected_change'
+    - **order**: 'asc' or 'desc'
+    - **search**: search keyword (title only)
+    - **duration**: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',
+        'year'
+    """
+    start = time.time()
+    item = get_trending_covid_publications(session=session, offset=offset, limit=limit, sort=sort, order=order,
                                      duration=duration, search=search)
     json_compatible_item_data = jsonable_encoder(item)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
