@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from event_stream.models.model import *
 from influxdb_client import InfluxDBClient
+from influxdb_client.client.write_api import SYNCHRONOUS
 
 # read in db config
 host_server = os.environ.get('POSTGRES_HOST', 'postgres')
@@ -30,5 +31,5 @@ Base = declarative_base()
 org = os.environ.get('INFLUXDB_V2_ORG', 'ambalytics')
 
 client = InfluxDBClient.from_env_properties()
-write_api = client.write_api()
+write_api = client.write_api(write_options=SYNCHRONOUS)
 query_api = client.query_api()

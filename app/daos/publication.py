@@ -104,6 +104,52 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
     return session.execute(s, params).fetchall()
 
 
+def get_trending_covid_publications(session: Session, offset: int = 0, limit: int = 10, sort: str = 'score',
+                              order: str = 'desc', duration: str = "currently", search: str = ''):
+    """ get trending covid publications from postgresql """
+    q = """
+        SELECT * FROM trending_covid_papers
+        WHERE duration = :duration
+        """
+
+    qs = """
+        AND title ILIKE :search
+    """
+
+    sortable = ['trending_ranking', 'score', 'count', 'mean_sentiment', 'sum_followers', 'abstract_difference',
+                'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations', 'mean_bot_rating',
+                'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev', 'year', 'citation_count']
+
+    qb = ' ORDER BY  '
+    if sort in sortable:
+        qb += sort + ' '
+    else:
+        qb += 'score '
+        # todo error
+
+    order_sql = ' ASC '
+    if order == 'desc':
+        order_sql = ' DESC '
+    qb += order_sql
+
+    qb += """
+            LIMIT :limit OFFSET :offset
+        """
+
+    params = {'duration': duration, 'limit': limit, 'offset': offset}
+    if len(search) > 3:
+        params['search'] = '%' + search + '%'
+        q += qs
+        q += qb
+        # print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'), bindparam('search'))
+    else:
+        q += qb
+        # print(q)
+        s = text(q).bindparams(bindparam('duration'), bindparam('limit'), bindparam('offset'))
+    return session.execute(s, params).fetchall()
+
+
 def get_trending_publications_for_field_of_study(fos_id: int, session: Session, offset: int = 0, limit: int = 10,
                                                  sort: str = 'score',
                                                  order: str = 'desc', duration: str = "currently", search: str = ''):
