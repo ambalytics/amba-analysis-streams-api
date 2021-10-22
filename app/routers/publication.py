@@ -97,7 +97,7 @@ def get_trending__covid_publications_router(
     """
     start = time.time()
     item = get_trending_covid_publications(session=session, offset=offset, limit=limit, sort=sort, order=order,
-                                     duration=duration, search=search)
+                                           duration=duration, search=search)
     json_compatible_item_data = jsonable_encoder(item)
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 

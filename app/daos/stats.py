@@ -388,7 +388,7 @@ def get_task_number_influx(duration="currently", field="score"):
         'followers': 'sum',
         'length': 'mean',
         'questions': 'mean',
-        'score': 'sum',
+        'score': 'mean',
         'sentiment_raw': 'mean',
         "pub_count": "count",
         "count": "count"
@@ -421,7 +421,7 @@ def get_number_influx(filter_obj, duration="currently", field="score"):
         'followers': 'sum',
         'length': 'mean',
         'questions': 'mean',
-        'score': 'sum',
+        'score': 'mean',
         'sentiment_raw': 'mean',
         "pub_count": "count",
         "count": "count"
