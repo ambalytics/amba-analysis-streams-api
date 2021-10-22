@@ -473,24 +473,33 @@ def get_number_influx(filter_obj, duration="currently", field="score"):
 def get_profile_information_for_doi(session: Session, doi, id, mode="publication", duration="currently"):
     """ get profile information for a doi, fieldOfStudy or Author"""
     query = """
-        SELECT
-               AVG(mean_score) mean_score,
-               AVG(abstract_difference) abstract_difference,
-               AVG(mean_sentiment) mean_sentiment,
+            SELECT AVG(mean_score)          mean_score,
+                   AVG(abstract_difference) abstract_difference,
+                   AVG(mean_sentiment)      mean_sentiment,
         """
     if mode == "publication":
         query += "SUM(sum_followers) sum_followers,"
     else:
         query += "AVG(sum_followers) sum_followers,"
     query += """
-               AVG(mean_length) mean_length,
-               AVG(mean_questions) mean_questions,
-               AVG(mean_exclamations) mean_exclamations,
-               AVG(mean_bot_rating) mean_bot_rating
-        FROM trending t
-                 JOIN publication p on p.doi = t.publication_doi
-                 JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
-                 JOIN publication_author pa on p.doi = pa.publication_doi
+            AVG(mean_length) mean_length,
+            AVG(mean_questions) mean_questions,
+            AVG(mean_exclamations) mean_exclamations,
+            AVG(mean_bot_rating) mean_bot_rating
+            FROM (
+                     SELECT DISTINCT doi,
+                                     mean_score,
+                                     abstract_difference,
+                                     mean_sentiment,
+                                     sum_followers,
+                                     mean_length,
+                                     mean_questions,
+                                     mean_exclamations,
+                                     mean_bot_rating
+                     FROM trending t
+                              JOIN publication p on p.doi = t.publication_doi
+                              JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
+                              JOIN publication_author pa on p.doi = pa.publication_doi
         WHERE duration = :duration
     """
 
@@ -504,6 +513,7 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
     if mode == "fieldOfStudy":
         query += "AND field_of_study_id = :id"
         params['id'] = id
+    query += "  ) t"
 
     s = text(query)
     # print(query)
@@ -515,6 +525,7 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
         s = s.bindparams(bindparam('duration'), bindparam('doi'))
 
     return session.execute(s, params).fetchone()._asdict()
+
 
 # todo check remove
 def fetch_with_doi_filter(session: Session, query, doi):
