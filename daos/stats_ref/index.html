@@ -1664,6 +1664,10 @@
         <span class="c1"># print(&#39;error&#39;)  # todo</span>
         <span class="k">return</span> <span class="kc">None</span>
 
+    <span class="c1"># todo fix this (this is because we want everywhere with s but influx runnning on without s</span>
+    <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">&#39;sum_followers&#39;</span><span class="p">:</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="s1">&#39;sum_follower&#39;</span>
+
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">&#39;_field_name&#39;</span><span class="p">:</span> <span class="n">field</span><span class="p">,</span>
          <span class="s2">&quot;_start&quot;</span><span class="p">:</span> <span class="n">trending_time_definition</span><span class="p">[</span><span class="n">duration</span><span class="p">][</span><span class="s1">&#39;duration&#39;</span><span class="p">],</span>
