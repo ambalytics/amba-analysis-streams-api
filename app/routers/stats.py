@@ -209,7 +209,7 @@ def get_trending_progress(field: Optional[str] = Query(None), n: Optional[int] =
         doi list.
 
         - **field**: list of strings with one of the following values: 'score' (default), 'count', 'mean_sentiment',
-            'sum_follower', 'abstract_difference', 'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations',
+            'sum_followers', 'abstract_difference', 'mean_age', 'mean_length', 'mean_questions', 'mean_exclamations',
             'mean_bot_rating', 'projected_change', 'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev'
         - **n**: if no dois given use the top n dois (based on the current duration)
         - **duration**: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',

@@ -694,6 +694,10 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
         # print('error')  # todo
         return None
 
+    # todo fix this (this is because we want everywhere with s but influx runnning on without s
+    if field == 'sum_followers':
+        field = 'sum_follower'
+
     params = {
         '_field_name': field,
          "_start": trending_time_definition[duration]['duration'],
