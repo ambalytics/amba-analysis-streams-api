@@ -696,8 +696,7 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
 
     params = {
         '_field_name': field,
-        '_window_time': trending_time_definition[duration]['window_size'],
-        "_duration_time": timedelta(seconds=-trending_time_definition[duration]['duration'].total_seconds()),
+         "_start": trending_time_definition[duration]['duration'],
         '_bucket': trending_time_definition[duration]['trending_bucket'],
     }
 
@@ -711,14 +710,8 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
     filter_obj = doi_filter_list(doi_list, params)
 
     query = """
-        import "experimental"
-        import "date"
-        
-        _start = experimental.subDuration(d: _duration_time, from: date.truncate(t: now(), unit: _window_time))
-        _stop =  date.truncate(t: now(), unit: _window_time)
-
        a = from(bucket: _bucket)
-         |> range(start: _start, stop:  _stop)
+         |> range(start: _start)
          |> filter(fn: (r) => r["_measurement"] == "trending") 
          |> filter(fn: (r) => r["_field"] == _field_name) """
     query += filter_obj['string']
