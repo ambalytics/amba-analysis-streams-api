@@ -21,7 +21,6 @@ nav:
           field_of_study: routers/field_of_study_ref.md
           publication: routers/publication_ref.md
           stats: routers/stats_ref.md
-        update_consumer: update_consumer_ref.md
 
 theme:
   name: material
