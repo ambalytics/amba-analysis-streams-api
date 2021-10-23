@@ -70,6 +70,7 @@ origins = [
     "http://localhost:8080",
     "http://localhost:8081",
     "https://analysis.ambalytics.cloud",
+    "https://trends.ambalytics.com",
     "https://mira.ambalytics.com",
     "https://ambalytics.com",
     "*"
