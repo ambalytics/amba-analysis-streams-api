@@ -529,6 +529,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#routers.publication.get_trending__covid_publications_router" class="md-nav__link">
+    get_trending__covid_publications_router()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#routers.publication.get_trending_publications_for_author_router" class="md-nav__link">
     get_trending_publications_for_author_router()
   </a>
@@ -574,20 +581,6 @@
           
         </ul>
       </nav>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../update_consumer_ref/" class="md-nav__link">
-        update_consumer
-      </a>
     </li>
   
 
@@ -639,6 +632,13 @@
         <li class="md-nav__item">
   <a href="#routers.publication.get_publications_router" class="md-nav__link">
     get_publications_router()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routers.publication.get_trending__covid_publications_router" class="md-nav__link">
+    get_trending__covid_publications_router()
   </a>
   
 </li>
@@ -794,6 +794,64 @@
 
   </div>
 
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="routers.publication.get_trending__covid_publications_router" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_trending__covid_publications_router</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="s1">&#39;score&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;desc&#39;</span><span class="p">,</span> <span class="n">search</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="s1">&#39;currently&#39;</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Return covid related publication trending data for a given duration.</p>
+<ul>
+<li><strong>offset</strong>: offset</li>
+<li><strong>limit</strong>: limit the result</li>
+<li><strong>sort</strong>: field to use for sort, available: 'score', 'count', 'mean_sentiment', 'sum_followers',
+            'abstract_difference', 'tweet_author_diversity', 'lan_diversity', 'location_diversity', 'mean_age',
+            'mean_length', 'avg_questions', 'avg_exclamations', 'projected_change'</li>
+<li><strong>order</strong>: 'asc' or 'desc'</li>
+<li><strong>search</strong>: search keyword (title only)</li>
+<li><strong>duration</strong>: the duration of data that should be queried, 'currently' (default), 'today', 'week', 'month',
+    'year'</li>
+</ul>
+
+        <details class="quote">
+          <summary>Source code in <code>routers/publication.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/trending/covid&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Get trending covid publications.&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AmbaResponse</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_trending__covid_publications_router</span><span class="p">(</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;score&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;desc&#39;</span><span class="p">,</span> <span class="n">search</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="n">duration</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;currently&quot;</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">)</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return covid related publication trending data for a given duration.</span>
+
+<span class="sd">    - **offset**: offset</span>
+<span class="sd">    - **limit**: limit the result</span>
+<span class="sd">    - **sort**: field to use for sort, available: &#39;score&#39;, &#39;count&#39;, &#39;mean_sentiment&#39;, &#39;sum_followers&#39;,</span>
+<span class="sd">                &#39;abstract_difference&#39;, &#39;tweet_author_diversity&#39;, &#39;lan_diversity&#39;, &#39;location_diversity&#39;, &#39;mean_age&#39;,</span>
+<span class="sd">                &#39;mean_length&#39;, &#39;avg_questions&#39;, &#39;avg_exclamations&#39;, &#39;projected_change&#39;</span>
+<span class="sd">    - **order**: &#39;asc&#39; or &#39;desc&#39;</span>
+<span class="sd">    - **search**: search keyword (title only)</span>
+<span class="sd">    - **duration**: the duration of data that should be queried, &#39;currently&#39; (default), &#39;today&#39;, &#39;week&#39;, &#39;month&#39;,</span>
+<span class="sd">        &#39;year&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">get_trending_covid_publications</span><span class="p">(</span><span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span>
+                                           <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="n">search</span><span class="o">=</span><span class="n">search</span><span class="p">)</span>
+    <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">jsonable_encoder</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">})</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
 
 
 

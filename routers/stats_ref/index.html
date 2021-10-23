@@ -600,20 +600,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../update_consumer_ref/" class="md-nav__link">
-        update_consumer
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -851,7 +837,7 @@
 
 
 <h2 id="routers.stats.get_profile_information" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_profile_information</span><span class="p">(</span><span class="n">dois</span><span class="o">=</span><span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">duration</span><span class="o">=</span><span class="s1">&#39;currently&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;publication&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
+<code class="highlight language-python"><span class="n">get_profile_information</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">duration</span><span class="o">=</span><span class="s1">&#39;currently&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;publication&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
 
 
 </h2>
@@ -871,7 +857,7 @@ the avg, min and max to compare against.</p>
         <details class="quote">
           <summary>Source code in <code>routers/stats.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/profile&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Get top profile information.&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AmbaResponse</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">get_profile_information</span><span class="p">(</span><span class="n">dois</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;currently&quot;</span><span class="p">,</span>
+<span class="k">def</span> <span class="nf">get_profile_information</span><span class="p">(</span><span class="n">doi</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;currently&quot;</span><span class="p">,</span>
                             <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;publication&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return profile information meaning it will not only return the value of the doi, author or field of study but</span>
@@ -885,21 +871,15 @@ the avg, min and max to compare against.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;publication&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">dois</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">id</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;publication&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">doi</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">id</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Missing data.&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">:</span>
-        <span class="c1"># print(&#39;field of study &#39; + str(id))</span>
-        <span class="n">dois</span> <span class="o">=</span> <span class="n">get_dois_for_field_of_study</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
-        <span class="c1"># print(dois)</span>
+    <span class="n">doi_info</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;publication&#39;</span><span class="p">:</span> <span class="n">get_profile_information_for_doi</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">doi</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+    <span class="p">}</span>
 
-    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="nb">id</span><span class="p">:</span>
-        <span class="n">dois</span> <span class="o">=</span> <span class="n">get_dois_for_author</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dois</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Missing data.&quot;</span><span class="p">)</span>
-
-    <span class="n">doi_info</span> <span class="o">=</span> <span class="n">get_profile_information_for_doi</span><span class="p">(</span><span class="n">query_api</span><span class="p">,</span> <span class="n">dois</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;publication&quot;</span> <span class="ow">and</span> <span class="n">doi</span> <span class="ow">and</span> <span class="n">doi_info</span><span class="p">:</span>
+        <span class="n">doi_info</span><span class="p">[</span><span class="s1">&#39;publication&#39;</span><span class="p">][</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doi</span>
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span> <span class="ow">and</span> <span class="nb">id</span> <span class="ow">and</span> <span class="n">doi_info</span><span class="p">:</span>
         <span class="n">doi_info</span><span class="p">[</span><span class="s1">&#39;publication&#39;</span><span class="p">][</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">retrieve_field_of_study</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="p">)[</span><span class="s1">&#39;fields_of_study&#39;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span> <span class="ow">and</span> <span class="nb">id</span> <span class="ow">and</span> <span class="n">doi_info</span><span class="p">:</span>
@@ -1253,21 +1233,6 @@ Data will be aggregated in windows to optimize performance.</p>
           </div>
         </a>
       
-      
-        
-        <a href="../../update_consumer_ref/" class="md-footer__link md-footer__link--next" aria-label="Next: update_consumer" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              update_consumer
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
-          </div>
-        </a>
       
     </nav>
   

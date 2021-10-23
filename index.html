@@ -514,20 +514,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="update_consumer_ref/" class="md-nav__link">
-        update_consumer
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -570,6 +556,30 @@
                 
                 <h1 id="amba-analysis-streams-api">amba-analysis-streams-api</h1>
 <p>REST API for stream analysis platform</p>
+<p>Monitoring over influxdb
+- every response will be saved as:</p>
+<pre><code> point = {
+        &quot;measurement&quot;: &quot;response_time&quot;,
+        &quot;tags&quot;: {
+            &quot;path&quot;: request.url.path
+        },
+        &quot;fields&quot;: {
+            'response_time': int(process_time * 1000),
+            'url': str(request.url)
+        },
+        &quot;time&quot;: datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}
+</code></pre>
+<ul>
+<li>show api response count per 5m in range</li>
+</ul>
+<pre><code>from(bucket: &quot;api_monitor&quot;)
+  |&gt; range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |&gt; filter(fn: (r) =&gt; r[&quot;_measurement&quot;] == &quot;response_time&quot;)
+  |&gt; filter(fn: (r) =&gt; r[&quot;_field&quot;] == &quot;response_time&quot;)
+  |&gt; group()
+  |&gt; aggregateWindow(every: 5m, fn: count, createEmpty: false)
+  |&gt; yield(name: &quot;mean&quot;)
+</code></pre>
                 
               
               

@@ -336,6 +336,27 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#daos.author.get_authors" class="md-nav__link">
+    get_authors()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daos.author.get_trending_authors" class="md-nav__link">
+    get_trending_authors()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daos.author.retrieve_author" class="md-nav__link">
+    retrieve_author()
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -544,20 +565,6 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../update_consumer_ref/" class="md-nav__link">
-        update_consumer
-      </a>
-    </li>
-  
-
-            
-          
         </ul>
       </nav>
     </li>
@@ -590,6 +597,27 @@
         <li class="md-nav__item">
   <a href="#daos.author" class="md-nav__link">
     daos.author
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daos.author.get_authors" class="md-nav__link">
+    get_authors()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daos.author.get_trending_authors" class="md-nav__link">
+    get_trending_authors()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daos.author.retrieve_author" class="md-nav__link">
+    retrieve_author()
   </a>
   
 </li>
@@ -630,6 +658,203 @@
 
 
 
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="daos.author.get_authors" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_authors</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;asc&#39;</span><span class="p">,</span> <span class="n">search</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>get authors from postresql</p>
+
+        <details class="quote">
+          <summary>Source code in <code>daos/author.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_authors</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;asc&#39;</span><span class="p">,</span>
+                     <span class="n">search</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get authors from postresql</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">         SELECT a.*, array_agg(&#39;{name: &quot;&#39; || p.title || &#39;&quot;, doi: &quot;&#39; || p.doi || &#39;&quot;, date: &quot;&#39; || p.pub_date || &#39;&quot;}&#39;) FROM author a</span>
+<span class="s2">             JOIN publication_author pfos on pfos.author_id = a.id</span>
+<span class="s2">             JOIN publication p on p.doi = pfos.publication_doi</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+
+    <span class="n">qs</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        WHERE a.name ILIKE &#39;%:search%&#39;</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+
+    <span class="n">qb</span> <span class="o">=</span> <span class="s1">&#39;  GROUP BY a.id ORDER BY  &#39;</span>
+    <span class="n">sortable</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">sort</span> <span class="ow">in</span> <span class="n">sortable</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sort</span> <span class="o">==</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span>
+            <span class="n">qb</span> <span class="o">+=</span> <span class="s1">&#39;a.id &#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">qb</span> <span class="o">+=</span> <span class="s1">&#39;a.id &#39;</span>
+
+    <span class="c1"># only allow set string to avoid sql injection</span>
+    <span class="n">order_sql</span> <span class="o">=</span> <span class="s1">&#39; ASC &#39;</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span>
+        <span class="n">order_sql</span> <span class="o">=</span> <span class="s1">&#39; DESC &#39;</span>
+    <span class="n">qb</span> <span class="o">+=</span> <span class="n">order_sql</span>
+
+    <span class="n">qb</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        LIMIT :limit OFFSET :offset</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;limit&#39;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="n">offset</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">search</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;search&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;%&#39;</span> <span class="o">+</span> <span class="n">search</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span>
+        <span class="n">q</span> <span class="o">+=</span> <span class="n">qs</span>
+        <span class="n">q</span> <span class="o">+=</span> <span class="n">qb</span>
+        <span class="c1"># print(q)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;limit&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;offset&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;search&#39;</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">q</span> <span class="o">+=</span> <span class="n">qb</span>
+        <span class="c1"># print(q)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;limit&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;offset&#39;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="daos.author.get_trending_authors" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_trending_authors</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="s1">&#39;score&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;asc&#39;</span><span class="p">,</span> <span class="n">search</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="s1">&#39;currently&#39;</span><span class="p">)</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>get trending authors from postgresql</p>
+
+        <details class="quote">
+          <summary>Source code in <code>daos/author.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_trending_authors</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;score&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;asc&#39;</span><span class="p">,</span>
+                         <span class="n">search</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;currently&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; get trending authors from postgresql</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    SELECT ROW_NUMBER () OVER (ORDER BY score DESC) as trending_ranking, *, count(*) OVER() AS total_count FROM (</span>
+<span class="s2">          SELECT a.id, a.name, count(t.publication_doi) as pub_count,</span>
+<span class="s2">              SUM(t.score) as score, SUM(count) as count, AVG(mean_sentiment) as mean_sentiment,</span>
+<span class="s2">              SUM(sum_followers) as sum_followers, AVG(abstract_difference) as abstract_difference,</span>
+<span class="s2">              AVG(mean_age) as mean_age, AVG(mean_length) as mean_length, AVG(mean_questions) as mean_questions,</span>
+<span class="s2">              AVG(mean_exclamations) as mean_exclamations, AVG(mean_bot_rating) as mean_bot_rating,</span>
+<span class="s2">              AVG(projected_change) as projected_change, AVG(trending) as trending, AVG(ema) as ema, AVG(kama) as kama,</span>
+<span class="s2">              AVG(ker) as ker, AVG(mean_score) as mean_score, AVG(stddev) as stddev</span>
+<span class="s2">          FROM trending t</span>
+<span class="s2">              JOIN publication p on p.doi = t.publication_doi</span>
+<span class="s2">              JOIN publication_author pa on p.doi = pa.publication_doi</span>
+<span class="s2">              JOIN author a on a.id = pa.author_id</span>
+<span class="s2">          WHERE duration = :duration</span>
+<span class="s2">      &quot;&quot;&quot;</span>
+
+    <span class="n">sortable</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;trending_ranking&#39;</span><span class="p">,</span> <span class="s1">&#39;score&#39;</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_sentiment&#39;</span><span class="p">,</span> <span class="s1">&#39;sum_followers&#39;</span><span class="p">,</span> <span class="s1">&#39;abstract_difference&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;mean_age&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_length&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_questions&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_exclamations&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_bot_rating&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;projected_change&#39;</span><span class="p">,</span> <span class="s1">&#39;trending&#39;</span><span class="p">,</span> <span class="s1">&#39;ema&#39;</span><span class="p">,</span> <span class="s1">&#39;kama&#39;</span><span class="p">,</span> <span class="s1">&#39;ker&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_score&#39;</span><span class="p">,</span> <span class="s1">&#39;stddev&#39;</span><span class="p">,</span> <span class="s1">&#39;pub_count&#39;</span><span class="p">]</span>
+
+    <span class="n">qb</span> <span class="o">=</span> <span class="s1">&#39;  GROUP BY a.id) t ORDER BY  &#39;</span>
+    <span class="n">qs</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            AND a.name ILIKE :search</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sort</span> <span class="ow">in</span> <span class="n">sortable</span><span class="p">:</span>
+        <span class="n">qb</span> <span class="o">+=</span> <span class="n">sort</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">qb</span> <span class="o">+=</span> <span class="s1">&#39;score &#39;</span>
+
+    <span class="n">order_sql</span> <span class="o">=</span> <span class="s1">&#39; ASC &#39;</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span>
+        <span class="n">order_sql</span> <span class="o">=</span> <span class="s1">&#39; DESC &#39;</span>
+    <span class="n">qb</span> <span class="o">+=</span> <span class="n">order_sql</span>
+
+    <span class="n">qb</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            LIMIT :limit OFFSET :offset</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="n">duration</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="n">offset</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">search</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;search&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;%&#39;</span> <span class="o">+</span> <span class="n">search</span> <span class="o">+</span> <span class="s1">&#39;%&#39;</span>
+        <span class="n">q</span> <span class="o">+=</span> <span class="n">qs</span>
+        <span class="n">q</span> <span class="o">+=</span> <span class="n">qb</span>
+        <span class="c1"># print(q)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;duration&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;limit&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;offset&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;search&#39;</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">q</span> <span class="o">+=</span> <span class="n">qb</span>
+        <span class="c1"># print(q)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;duration&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;limit&#39;</span><span class="p">),</span> <span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;offset&#39;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="daos.author.retrieve_author" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">retrieve_author</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">with_pubs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>get author data for from postresql</p>
+<ul>
+<li><strong>id</strong>: author id</li>
+<li><strong>with_pubs</strong>: include publication</li>
+</ul>
+
+        <details class="quote">
+          <summary>Source code in <code>daos/author.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">retrieve_author</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">with_pubs</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get author data for from postresql</span>
+
+<span class="sd">    - **id**: author id</span>
+<span class="sd">    - **with_pubs**: include publication</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">id</span><span class="p">}</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;SELECT name FROM author WHERE id=:id&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">))</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;author&#39;</span><span class="p">:</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+
+    <span class="k">if</span> <span class="n">with_pubs</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">              SELECT p.* FROM publication_author pf</span>
+<span class="s2">              JOIN publication p on p.doi = pf.publication_doi </span>
+<span class="s2">              WHERE pf.author_id=:id&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">))</span>
+        <span class="n">pubs</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;publications&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pubs</span>
+
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
 
 
 
