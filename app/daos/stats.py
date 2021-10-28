@@ -174,6 +174,22 @@ def get_dois_for_author(id, session: Session, duration="currently"):
     return result
 
 
+def get_titles_for_dois(session: Session, dois_list):
+    query = "SELECT doi, title FROM publication p WHERE doi in :dois"
+
+    params = {'dois': dois_list}
+    s = text(query)
+    s = s.bindparams(bindparam('dois', expanding=True))
+    rows = session.execute(s, params).fetchall()
+
+    result = {}
+    for r in rows:
+        result[r[0]] = r[1]
+
+    # print(result)
+    return result
+
+
 def get_profile_information_avg(session: Session, duration="currently"):
     """ get profile information avg, min, max from postgresql """
     query = """
@@ -662,8 +678,9 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
         # print(query)
         # print(filter_obj['params'])
 
-        a = time.time()
+        # a = time.time()
         tables = query_api.query(query, params=filter_obj['params'])
+        titles = get_titles_for_dois(session, doi_list)
         # print(time.time() - a)
 
         results = []
@@ -678,6 +695,7 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
                     doi = record['doi']
             results.append({
                 "doi": doi,
+                "title": titles[doi],
                 "data": data,
             })
 
@@ -700,7 +718,7 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
 
     params = {
         '_field_name': field,
-         "_start": trending_time_definition[duration]['duration'],
+        "_start": trending_time_definition[duration]['duration'],
         '_bucket': trending_time_definition[duration]['trending_bucket'],
     }
 
@@ -725,6 +743,7 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
     """
 
     tables = query_api.query(query, params=filter_obj['params'])
+    titles = get_titles_for_dois(session, doi_list)
     results = []
     for table in tables:
 
@@ -737,6 +756,7 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
                 doi = record['doi']
         results.append({
             "doi": doi,
+            "title": titles[doi],
             "data": data,
         })
 
@@ -762,7 +782,7 @@ def system_running_check(query_api):
     """ check if the system is running correctly by counting how many tweets we got in the last 5 minutes,
         if over 10 than ok"""
     query = """
-        from(bucket: "currently)
+        from(bucket: "currently")
           |> range(start: -5m)
           |> filter(fn: (r) => r["_measurement"] == "trending")
           |> filter(fn: (r) => r["_field"] == "score")
