@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from app.routers.publication import router as PublicationRouter
 from app.routers.stats import router as StatsRouter
 from app.routers.field_of_study import router as FieldOfStudyRouter
@@ -58,6 +59,8 @@ app = FastAPI(
         "url": "https://opendatacommons.org/licenses/by/1-0/",
     },
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 try:
     app.add_middleware(SentryAsgiMiddleware)
