@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.5">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.6">
     
     
       
@@ -22,7 +22,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.cdeb8541.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.a57b2b03.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.3f5d1f46.min.css">
@@ -486,6 +486,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#daos.stats.get_total_tweet_count" class="md-nav__link">
+    get_total_tweet_count()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#daos.stats.get_trending_chart_data" class="md-nav__link">
     get_trending_chart_data()
   </a>
@@ -797,6 +804,13 @@
         <li class="md-nav__item">
   <a href="#daos.stats.get_top_n_trending_dois" class="md-nav__link">
     get_top_n_trending_dois()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daos.stats.get_total_tweet_count" class="md-nav__link">
+    get_total_tweet_count()
   </a>
   
 </li>
@@ -1218,7 +1232,7 @@
         <span class="s1">&#39;followers&#39;</span><span class="p">:</span> <span class="s1">&#39;sum&#39;</span><span class="p">,</span>
         <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
         <span class="s1">&#39;questions&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="s1">&#39;sum&#39;</span><span class="p">,</span>
         <span class="s1">&#39;sentiment_raw&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
         <span class="s2">&quot;pub_count&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
         <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span>
@@ -1448,9 +1462,9 @@
 <span class="s2">                                     mean_exclamations,</span>
 <span class="s2">                                     mean_bot_rating</span>
 <span class="s2">                     FROM trending t</span>
-<span class="s2">                              JOIN publication p on p.doi = t.publication_doi</span>
-<span class="s2">                              JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi</span>
-<span class="s2">                              JOIN publication_author pa on p.doi = pa.publication_doi</span>
+<span class="s2">                              LEFT JOIN publication p on p.doi = t.publication_doi</span>
+<span class="s2">                              LEFT JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi</span>
+<span class="s2">                              LEFT JOIN publication_author pa on p.doi = pa.publication_doi</span>
 <span class="s2">        WHERE duration = :duration</span>
 <span class="s2">    &quot;&quot;&quot;</span>
 
@@ -1509,7 +1523,7 @@
         <span class="s1">&#39;followers&#39;</span><span class="p">:</span> <span class="s1">&#39;sum&#39;</span><span class="p">,</span>
         <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
         <span class="s1">&#39;questions&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="s1">&#39;sum&#39;</span><span class="p">,</span>
         <span class="s1">&#39;sentiment_raw&#39;</span><span class="p">:</span> <span class="s1">&#39;mean&#39;</span><span class="p">,</span>
         <span class="s2">&quot;pub_count&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
         <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span>
@@ -1635,6 +1649,60 @@
 
     <span class="c1"># print(result)</span>
     <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="daos.stats.get_total_tweet_count" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_total_tweet_count</span><span class="p">(</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;publication&#39;</span><span class="p">)</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>get tweet author count from postgresql </p>
+
+        <details class="quote">
+          <summary>Source code in <code>daos/stats.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_total_tweet_count</span><span class="p">(</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;publication&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; get tweet author count from postgresql &quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;fieldOfStudy&quot;</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT SUM(count) as count</span>
+<span class="s2">                    FROM discussion_data_point as ddp</span>
+<span class="s2">                         JOIN publication_field_of_study as pfos on ddp.publication_doi = pfos.publication_doi</span>
+<span class="s2">                    WHERE ddp.discussion_data_point_id IN (12,50,88,141) AND pfos.field_of_study_id=:id &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">id</span>
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;author&quot;</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT SUM(count) as count </span>
+<span class="s2">                    FROM discussion_data_point as ddp</span>
+<span class="s2">                         JOIN publication_author as pfos on ddp.publication_doi = pfos.publication_doi</span>
+<span class="s2">                    WHERE ddp.discussion_data_point_id IN (12,50,88,141) AND pfos.author_id=:id &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">id</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># default publication</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT SUM(count) FROM discussion_data_point ddp WHERE ddp.discussion_data_point_id IN (12,50,88,141)  &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">doi</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">+=</span> <span class="s2">&quot; AND publication_doi = :doi &quot;</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doi</span>
+
+    <span class="c1"># print(query)</span>
+    <span class="c1"># print(params)</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">doi</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">bindparams</span><span class="p">(</span><span class="n">bindparam</span><span class="p">(</span><span class="s1">&#39;doi&#39;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
 </code></pre></div>
         </details>
     </div>
@@ -2100,10 +2168,10 @@ if over 10 than ok</p>
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.8397ff9e.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.fcfe8b6d.min.js", "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.1e84347e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.b1047164.min.js"></script>
       
     
   </body>

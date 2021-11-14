@@ -14,7 +14,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.5">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-7.3.6">
     
     
       
@@ -22,7 +22,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.cdeb8541.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.a57b2b03.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.3f5d1f46.min.css">
@@ -531,6 +531,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#routers.stats.get_count_total_tweets" class="md-nav__link">
+    get_count_total_tweets()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#routers.stats.get_count_tweet_author" class="md-nav__link">
     get_count_tweet_author()
   </a>
@@ -641,6 +648,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#routers.stats.get_count_total_tweets" class="md-nav__link">
+    get_count_total_tweets()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#routers.stats.get_count_tweet_author" class="md-nav__link">
     get_count_tweet_author()
   </a>
@@ -737,15 +751,15 @@
 
 
 
-<h2 id="routers.stats.get_count_tweet_author" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_count_tweet_author</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;publication&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
+<h2 id="routers.stats.get_count_total_tweets" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_count_total_tweets</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;publication&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
 
 
 </h2>
 
     <div class="doc doc-contents ">
 
-      <p>Get tweet author count.</p>
+      <p>Get total tweet count.</p>
 <ul>
 <li><strong>doi</strong>: (optional) only use the given doi</li>
 <li><strong>mode</strong>: what mode should be used, can be: 'publication' (default), 'fieldOfStudy' or 'author'</li>
@@ -754,11 +768,54 @@
 
         <details class="quote">
           <summary>Source code in <code>routers/stats.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/countTweetAuthors&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Get tweet author count.&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AmbaResponse</span><span class="p">)</span>
+          <div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/countTweets&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Get total tweet count.&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AmbaResponse</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_count_total_tweets</span><span class="p">(</span><span class="n">doi</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;publication&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                           <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get total tweet count.</span>
+
+<span class="sd">        - **doi**: (optional) only use the given doi</span>
+<span class="sd">        - **mode**: what mode should be used, can be: &#39;publication&#39; (default), &#39;fieldOfStudy&#39; or &#39;author&#39;</span>
+<span class="sd">        - **id**: needed for &#39;fieldOfStudy&#39; or &#39;author&#39; mode, the id of the entity</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">get_total_tweet_count</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+    <span class="c1"># print(json_compatible_item_data)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">}</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="routers.stats.get_count_tweet_author" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_count_tweet_author</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;publication&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">))</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>Get total tweet author count.</p>
+<ul>
+<li><strong>doi</strong>: (optional) only use the given doi</li>
+<li><strong>mode</strong>: what mode should be used, can be: 'publication' (default), 'fieldOfStudy' or 'author'</li>
+<li><strong>id</strong>: needed for 'fieldOfStudy' or 'author' mode, the id of the entity</li>
+</ul>
+
+        <details class="quote">
+          <summary>Source code in <code>routers/stats.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/countTweetAuthors&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Get total tweet author count.&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AmbaResponse</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">get_count_tweet_author</span><span class="p">(</span><span class="n">doi</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;publication&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                            <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get tweet author count.</span>
+<span class="sd">        Get total tweet author count.</span>
 
 <span class="sd">        - **doi**: (optional) only use the given doi</span>
 <span class="sd">        - **mode**: what mode should be used, can be: &#39;publication&#39; (default), &#39;fieldOfStudy&#39; or &#39;author&#39;</span>
@@ -1261,10 +1318,10 @@ Data will be aggregated in windows to optimize performance.</p>
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.8397ff9e.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.fcfe8b6d.min.js", "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.1e84347e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.b1047164.min.js"></script>
       
     
   </body>
