@@ -24,6 +24,7 @@ from app.daos.stats import (
     get_dois_for_author,
     get_dois_for_field_of_study,
     get_tweets,
+    get_total_tweet_count,
     get_tweet_author_count
 )
 import event_stream.models.model as models
@@ -251,11 +252,27 @@ def get_tweets_discussion_data(doi: Optional[str] = Query(None), mode: str = "pu
 
 
 # get tweet author count
-@router.get("/countTweetAuthors", summary="Get tweet author count.", response_model=AmbaResponse)
+@router.get("/countTweets", summary="Get total tweet count.", response_model=AmbaResponse)
+def get_count_total_tweets(doi: Optional[str] = Query(None), mode: str = "publication", id: int = None,
+                           session: Session = Depends(get_session)):
+    """
+        Get total tweet count.
+
+        - **doi**: (optional) only use the given doi
+        - **mode**: what mode should be used, can be: 'publication' (default), 'fieldOfStudy' or 'author'
+        - **id**: needed for 'fieldOfStudy' or 'author' mode, the id of the entity
+    """
+    start = time.time()
+    json_compatible_item_data = get_total_tweet_count(doi=doi, session=session, id=id, mode=mode)
+    # print(json_compatible_item_data)
+    return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
+
+
+@router.get("/countTweetAuthors", summary="Get total tweet author count.", response_model=AmbaResponse)
 def get_count_tweet_author(doi: Optional[str] = Query(None), mode: str = "publication", id: int = None,
                            session: Session = Depends(get_session)):
     """
-        Get tweet author count.
+        Get total tweet author count.
 
         - **doi**: (optional) only use the given doi
         - **mode**: what mode should be used, can be: 'publication' (default), 'fieldOfStudy' or 'author'

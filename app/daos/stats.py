@@ -75,6 +75,38 @@ def get_tweet_author_count(doi, session: Session, id, mode="publication"):
     return session.execute(s, params).fetchall()
 
 
+def get_total_tweet_count(doi, session: Session, id, mode="publication"):
+    """ get tweet author count from postgresql """
+    params = {}
+    if mode == "fieldOfStudy":
+        query = """SELECT SUM(count) as count
+                    FROM discussion_data_point as ddp
+                         JOIN publication_field_of_study as pfos on ddp.publication_doi = pfos.publication_doi
+                    WHERE ddp.discussion_data_point_id IN (12,50,88,141) AND pfos.field_of_study_id=:id """
+        params['id'] = id
+    elif mode == "author":
+        query = """SELECT SUM(count) as count 
+                    FROM discussion_data_point as ddp
+                         JOIN publication_author as pfos on ddp.publication_doi = pfos.publication_doi
+                    WHERE ddp.discussion_data_point_id IN (12,50,88,141) AND pfos.author_id=:id """
+        params['id'] = id
+    else:  # default publication
+        query = """SELECT SUM(count) FROM discussion_data_point ddp WHERE ddp.discussion_data_point_id IN (12,50,88,141)  """
+
+    if doi:
+        query += " AND publication_doi = :doi "
+        params['doi'] = doi
+
+    # print(query)
+    # print(params)
+
+    s = text(query)
+    if doi:
+        s = s.bindparams(bindparam('doi'))
+
+    return session.execute(s, params).fetchall()
+
+
 def get_tweets(doi, session: Session, id, mode="publication"):
     """ get newest tweet from postgresql """
     params = {}
@@ -404,7 +436,7 @@ def get_task_number_influx(duration="currently", field="score"):
         'followers': 'sum',
         'length': 'mean',
         'questions': 'mean',
-        'score': 'mean',
+        'score': 'sum',
         'sentiment_raw': 'mean',
         "pub_count": "count",
         "count": "count"
@@ -437,7 +469,7 @@ def get_number_influx(filter_obj, duration="currently", field="score"):
         'followers': 'sum',
         'length': 'mean',
         'questions': 'mean',
-        'score': 'mean',
+        'score': 'sum',
         'sentiment_raw': 'mean',
         "pub_count": "count",
         "count": "count"
@@ -513,9 +545,9 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
                                      mean_exclamations,
                                      mean_bot_rating
                      FROM trending t
-                              JOIN publication p on p.doi = t.publication_doi
-                              JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
-                              JOIN publication_author pa on p.doi = pa.publication_doi
+                              LEFT JOIN publication p on p.doi = t.publication_doi
+                              LEFT JOIN publication_field_of_study pfos on p.doi = pfos.publication_doi
+                              LEFT JOIN publication_author pa on p.doi = pa.publication_doi
         WHERE duration = :duration
     """
 
