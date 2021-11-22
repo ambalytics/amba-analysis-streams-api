@@ -559,6 +559,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#routers.stats.get_session" class="md-nav__link">
+    get_session()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#routers.stats.get_top_percentage_values" class="md-nav__link">
     get_top_percentage_values()
   </a>
@@ -676,6 +683,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#routers.stats.get_session" class="md-nav__link">
+    get_session()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#routers.stats.get_top_percentage_values" class="md-nav__link">
     get_top_percentage_values()
   </a>
@@ -780,7 +794,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">get_total_tweet_count</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
-    <span class="c1"># print(json_compatible_item_data)</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">}</span>
 </code></pre></div>
         </details>
@@ -823,7 +836,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="n">get_tweet_author_count</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
-    <span class="c1"># print(json_compatible_item_data)</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">}</span>
 </code></pre></div>
         </details>
@@ -958,6 +970,38 @@ the avg, min and max to compare against.</p>
 
   </div>
 
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h2 id="routers.stats.get_session" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_session</span><span class="p">()</span></code>
+
+
+</h2>
+
+    <div class="doc doc-contents ">
+
+      <p>get/create a session</p>
+
+        <details class="quote">
+          <summary>Source code in <code>routers/stats.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_session</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get/create a session</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">SessionLocal</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">session</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
 
 
 
@@ -1178,7 +1222,6 @@ doi list.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">json_compatible_item_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_tweets</span><span class="p">(</span><span class="n">doi</span><span class="o">=</span><span class="n">doi</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)]</span>
-    <span class="c1"># print(json_compatible_item_data)</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">json_compatible_item_data</span><span class="p">}</span>
 </code></pre></div>
         </details>
