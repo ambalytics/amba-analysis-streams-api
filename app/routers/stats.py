@@ -75,7 +75,6 @@ def get_numbers(fields: Optional[List[str]] = Query(None), dois: Optional[List[s
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 
 
-# todo remove und language and unknwon countries
 @router.get("/top", summary="Get top numbers.", response_model=AmbaResponse)
 def get_top_values(fields: Optional[List[str]] = Query(None), doi: Optional[str] = None, limit: int = 10,
                    mode: str = "publication", id: int = None, session: Session = Depends(get_session)):

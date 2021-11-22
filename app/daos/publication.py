@@ -79,7 +79,6 @@ def get_trending_publications(session: Session, offset: int = 0, limit: int = 10
         qb += sort + ' '
     else:
         qb += 'score '
-        # todo error
 
     order_sql = ' ASC '
     if order == 'desc':
@@ -125,7 +124,6 @@ def get_trending_covid_publications(session: Session, offset: int = 0, limit: in
         qb += sort + ' '
     else:
         qb += 'score '
-        # todo error
 
     order_sql = ' ASC '
     if order == 'desc':
