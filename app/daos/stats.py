@@ -3,7 +3,7 @@ from datetime import timedelta
 from sqlalchemy import text, bindparam
 from sqlalchemy.orm import Session  # type: ignore
 
-# time definitions used by influxdb
+# time definitions shared with influxdb
 trending_time_definition = {
     'currently': {
         'name': 'currently',

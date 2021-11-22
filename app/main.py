@@ -25,7 +25,7 @@ sentry_sdk.init(
 )
 
 description = """
-ambalytics analysis streams api allows you to retrieve data which hast been collected, processed and analyzed by
+ambalytics analysis api allows you to retrieve data which hast been collected, processed and analyzed by
 the streaming pipeline.
 
 ## Publications
@@ -45,7 +45,7 @@ Utilities.
 """
 
 app = FastAPI(
-    title="ambalytics analysis streams api",
+    title="ambalytics analysis trends api",
     description=description,
     version="0.9.1",
     terms_of_service="https://ambalytics.com/",
@@ -89,6 +89,9 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
+    """
+    store process time in the influxdb for statistics
+    """
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time

@@ -1,8 +1,4 @@
-import logging
 import time
-from typing import List
-from urllib.parse import unquote
-
 from app.models.schema import StatValue, Publication, TimeValue, AmbaResponse
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -22,31 +18,14 @@ router = APIRouter()
 
 
 def get_session():
+    """
+    get/create a session
+    """
     session = SessionLocal()
     try:
         yield session
     finally:
         session.close()
-
-
-@router.get("/", summary="Get Fields of Study.", response_model=AmbaResponse)
-def get_fields_of_study_router(
-        offset: int = 0, limit: int = 10, sort: str = 'id', order: str = 'asc', search: str = '',
-        session: Session = Depends(get_session)):
-    """
-    Return fields of study data with added reduced publication data as json. This will **not** contain any trending or
-    processed data.
-
-    - **offset**: offset
-    - **limit**: limit the result
-    - **sort**: field to use for sort
-    - **order**: 'asc' or 'desc'
-    - **search**: search keyword (title only)
-    """
-    start = time.time()
-    json_compatible_item_data = get_fields_of_study(session=session, offset=offset, limit=limit, sort=sort, order=order,
-                                                    search=search)
-    return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
 
 
 @router.get("/trending", summary="Get trending Fields of Study.", response_model=AmbaResponse)
