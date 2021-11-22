@@ -35,6 +35,9 @@ router = APIRouter()
 
 
 def get_session():
+    """
+    get/create a session
+    """
     session = SessionLocal()
     try:
         yield session
@@ -247,7 +250,6 @@ def get_tweets_discussion_data(doi: Optional[str] = Query(None), mode: str = "pu
     """
     start = time.time()
     json_compatible_item_data = [get_tweets(doi=doi, session=session, id=id, mode=mode)]
-    # print(json_compatible_item_data)
     return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
 
 
@@ -264,7 +266,6 @@ def get_count_total_tweets(doi: Optional[str] = Query(None), mode: str = "public
     """
     start = time.time()
     json_compatible_item_data = get_total_tweet_count(doi=doi, session=session, id=id, mode=mode)
-    # print(json_compatible_item_data)
     return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
 
 
@@ -280,5 +281,4 @@ def get_count_tweet_author(doi: Optional[str] = Query(None), mode: str = "public
     """
     start = time.time()
     json_compatible_item_data = get_tweet_author_count(doi=doi, session=session, id=id, mode=mode)
-    # print(json_compatible_item_data)
     return {"time": round((time.time() - start) * 1000), "results": json_compatible_item_data}
