@@ -1647,7 +1647,6 @@
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
         <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="c1"># print(result)</span>
     <span class="k">return</span> <span class="n">result</span>
 </code></pre></div>
         </details>
@@ -1734,10 +1733,8 @@
               <span class="s1">&#39;trending&#39;</span><span class="p">,</span> <span class="s1">&#39;ema&#39;</span><span class="p">,</span> <span class="s1">&#39;kama&#39;</span><span class="p">,</span> <span class="s1">&#39;ker&#39;</span><span class="p">,</span> <span class="s1">&#39;mean_score&#39;</span><span class="p">,</span> <span class="s1">&#39;stddev&#39;</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
-        <span class="c1"># print(&#39;error&#39;)  # todo</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># todo fix this (this is because we want everywhere with s but influx runnning on without s</span>
     <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">&#39;sum_followers&#39;</span><span class="p">:</span>
         <span class="n">field</span> <span class="o">=</span> <span class="s1">&#39;sum_follower&#39;</span>
 
@@ -1961,7 +1958,6 @@
     <span class="p">}</span>
 
     <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">aggregation_field</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">)</span>  <span class="c1"># todo</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">else</span><span class="p">:</span>
@@ -1980,7 +1976,6 @@
             <span class="s1">&#39;_bucket&#39;</span><span class="p">:</span> <span class="n">trending_time_definition</span><span class="p">[</span><span class="n">duration</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
         <span class="p">}</span>
 
-        <span class="c1"># print(dois)</span>
         <span class="n">doi_list</span> <span class="o">=</span> <span class="n">dois</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">doi_list</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">doi_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">doi_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">doi_list</span> <span class="o">=</span> <span class="n">get_top_n_trending_dois</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
@@ -2006,13 +2001,8 @@
 <span class="s2">             |&gt; keep(columns: [&quot;_value&quot;, &quot;_time&quot;, &quot;_field&quot;, &quot;doi&quot;])</span>
 <span class="s2">             |&gt; yield()</span>
 <span class="s2">        &quot;&quot;&quot;</span>
-        <span class="c1"># print(query)</span>
-        <span class="c1"># print(filter_obj[&#39;params&#39;])</span>
-
-        <span class="c1"># a = time.time()</span>
         <span class="n">tables</span> <span class="o">=</span> <span class="n">query_api</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">filter_obj</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">])</span>
         <span class="n">titles</span> <span class="o">=</span> <span class="n">get_titles_for_dois</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">doi_list</span><span class="p">)</span>
-        <span class="c1"># print(time.time() - a)</span>
 
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
