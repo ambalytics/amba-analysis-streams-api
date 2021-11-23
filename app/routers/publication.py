@@ -140,7 +140,6 @@ def get_trending_publications_for_author_router(id: int,
     return JSONResponse(content={"time": round((time.time() - start) * 1000), "results": json_compatible_item_data})
 
 
-# # todo use doi, regex? start with 1 ,  response_model=Publication
 @router.get("/get", summary="Get publication.", response_model=AmbaResponse)
 def get_publication_data(doi: str, duration: str = "currently", session: Session = Depends(get_session)):
     """

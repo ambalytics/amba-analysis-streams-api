@@ -575,7 +575,6 @@ def get_profile_information_for_doi(session: Session, doi, id, mode="publication
     return session.execute(s, params).fetchone()._asdict()
 
 
-# todo check remove
 def fetch_with_doi_filter(session: Session, query, doi):
     """ postresql helper to add a doi filter """
     if doi:
@@ -643,7 +642,6 @@ def get_top_n_trending_dois(session: Session, duration="currently", n=5):
     for r in rows:
         result.append(r[0])
 
-    # print(result)
     return result
 
 
@@ -662,7 +660,6 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
     }
 
     if field not in aggregation_field:
-        print('error')  # todo
         return None
 
     else:
@@ -681,7 +678,6 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
             '_bucket': trending_time_definition[duration]['name'],
         }
 
-        # print(dois)
         doi_list = dois
         if not doi_list or len(doi_list) == 0 or doi_list is None:
             doi_list = get_top_n_trending_dois(session, duration, n)
@@ -707,13 +703,8 @@ def get_window_chart_data(query_api, session: Session, duration="currently", fie
              |> keep(columns: ["_value", "_time", "_field", "doi"])
              |> yield()
         """
-        # print(query)
-        # print(filter_obj['params'])
-
-        # a = time.time()
         tables = query_api.query(query, params=filter_obj['params'])
         titles = get_titles_for_dois(session, doi_list)
-        # print(time.time() - a)
 
         results = []
         for table in tables:
@@ -741,10 +732,8 @@ def get_trending_chart_data(query_api, session: Session, duration="currently", f
               'trending', 'ema', 'kama', 'ker', 'mean_score', 'stddev']
 
     if field not in fields:
-        # print('error')  # todo
         return None
 
-    # todo fix this (this is because we want everywhere with s but influx runnning on without s
     if field == 'sum_followers':
         field = 'sum_follower'
 
