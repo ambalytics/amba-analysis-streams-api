@@ -283,22 +283,21 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                             ROUND(count / CAST(SUM(count) OVER () AS FLOAT) * 1000) / 10 as p
                             FROM counted_discussion_data
                                     JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)
-                           WHERE type = 'location' and value != 'und' and value != 'unknown'
+                           WHERE type = :type and value != 'und' and value != 'unknown'
                      ORDER BY c DESC
-                     LIMIT 100
+                     LIMIT :limit
                  )
                  UNION
                  (
                      SELECT 'total' as "value", SUM(count) as c, 100 as p
                      FROM counted_discussion_data
                                     JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)
-                     WHERE type = 'location' and value != 'und' and value != 'unknown'
-
+                     WHERE type = :type and value != 'und' and value != 'unknown'
                  )
              )
             SELECT "value", c as count, p
             FROM result
-            WHERE result.p >= 1
+            WHERE result.p >= :mp
             ORDER BY count DESC;
      """
    
