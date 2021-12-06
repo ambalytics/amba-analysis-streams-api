@@ -337,6 +337,7 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
 def get_discussion_data_list(session: Session, doi, limit, id, mode="publication", dd_type="word"):
     """ get discussion types with count from postgresql """
     params = {'type': dd_type}
+    extra = ""
     if mode == "fieldOfStudy":
         query = """SELECT SUM(ddp.count) as count, dd.value
                     FROM discussion_data_point as ddp
@@ -344,6 +345,7 @@ def get_discussion_data_list(session: Session, doi, limit, id, mode="publication
                          JOIN publication_field_of_study as pfos on ddp.publication_doi = pfos.publication_doi
                     WHERE type = :type and value != 'und' and value != 'unknown' AND pfos.field_of_study_id=:id """
         params['id'] = id
+        extra +=  " GROUP BY dd.id "
     elif mode == "author":
         query = """SELECT SUM(ddp.count) as count, dd.value
                     FROM discussion_data_point as ddp
@@ -351,13 +353,14 @@ def get_discussion_data_list(session: Session, doi, limit, id, mode="publication
                          JOIN publication_author as pfos on ddp.publication_doi = pfos.publication_doi
                     WHERE type = :type and value != 'und' and value != 'unknown' AND pfos.author_id=:id """
         params['id'] = id
+        extra +=  " GROUP BY dd.id "
     else:  # default publication
-        query = """SELECT SUM(ddp.count) as count, dd.value
-                    FROM discussion_data_point as ddp
-                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+        query = """SELECT count, dd.value
+                    FROM counted_discussion_data
+                    JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)
                     WHERE type = :type and value != 'und' and value != 'unknown' """
 
-    extra = """ GROUP BY dd.id ORDER BY count DESC """
+    extra += """ ORDER BY count DESC """
 
     if limit:
         params['limit'] = limit
