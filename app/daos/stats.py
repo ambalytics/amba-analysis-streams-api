@@ -275,7 +275,42 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                                              dd_type="lang"):
     """ get discussion types with count an percentage from postgresql """
     query = """
-            WITH result AS
+                WITH result AS
+             (
+                 (
+                     SELECT "value",
+                            count                                                            as c,
+                            ROUND(count / CAST(SUM(count) OVER () AS FLOAT) * 1000) / 10 as p
+                            FROM counted_discussion_data
+                                    JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)
+                           WHERE type = :type and value != 'und' and value != 'unknown'
+                     ORDER BY c DESC
+                     LIMIT :limit
+                 )
+                 UNION
+                 (
+                     SELECT 'total' as "value", SUM(count) as c, 100 as p
+                     FROM counted_discussion_data
+                                    JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)
+                     WHERE type = :type and value != 'und' and value != 'unknown'
+
+                 )
+             )
+            SELECT "value", c as count, p
+            FROM result
+            WHERE result.p >= :mp
+            ORDER BY count DESC;
+     """
+   
+    params = {
+        'type': dd_type,
+        'limit': limit,
+        'mp': min_percentage
+    }
+
+    if doi:
+        query = """
+        WITH result AS
                      (
                          (
                              SELECT "value",
@@ -285,8 +320,8 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                                    FROM discussion_data_point as ddp
                                             JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
                                    WHERE type = :type and value != 'und' and value != 'unknown'
-                                     """
-    extra1 = """) temp
+                                   AND publication_doi=:doi
+                            ) temp
                              GROUP BY "value"
                              ORDER BY c DESC
                              LIMIT :limit
@@ -297,8 +332,7 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                              FROM discussion_data_point as ddp
                                       JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
                              WHERE type = :type and value != 'und' and value != 'unknown'
-                               """
-    extra2 = """
+                             AND publication_doi=:doi
                          )
                      )
             SELECT "value", c as count, p
@@ -306,22 +340,8 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
             WHERE result.p >= :mp
             ORDER BY count DESC;
         """
-    params = {
-        'type': dd_type,
-        'limit': limit,
-        'mp': min_percentage
-    }
-
-    if doi:
-        query += ' AND publication_doi=:doi '
         params['doi'] = doi
 
-    query += extra1
-
-    if doi:
-        query += ' AND publication_doi=:doi '
-
-    query += extra2
     s = text(query)
     # print(query)
     # print(params)
@@ -354,6 +374,13 @@ def get_discussion_data_list(session: Session, doi, limit, id, mode="publication
                     WHERE type = :type and value != 'und' and value != 'unknown' AND pfos.author_id=:id """
         params['id'] = id
         extra +=  " GROUP BY dd.id "
+    elif doi: # default publication
+        query = """SELECT SUM(ddp.count) as count, dd.value
+                    FROM discussion_data_point as ddp
+                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)
+                    WHERE type = :type and value != 'und' and value != 'unknown' AND publication_doi=:doi """
+        params['doi'] = doi
+        extra +=  " GROUP BY dd.id "
     else:  # default publication
         query = """SELECT count, dd.value
                     FROM counted_discussion_data
@@ -365,10 +392,6 @@ def get_discussion_data_list(session: Session, doi, limit, id, mode="publication
     if limit:
         params['limit'] = limit
         extra += " LIMIT :limit "
-
-    if doi:
-        query += 'AND publication_doi=:doi '
-        params['doi'] = doi
 
     query += extra
     s = text(query)
