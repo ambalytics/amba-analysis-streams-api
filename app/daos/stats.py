@@ -293,7 +293,6 @@ def get_discussion_data_list_with_percentage(session: Session, doi, limit: int =
                      FROM counted_discussion_data
                                     JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)
                      WHERE type = :type and value != 'und' and value != 'unknown'
-
                  )
              )
             SELECT "value", c as count, p
