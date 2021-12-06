@@ -987,6 +987,13 @@
 <span class="s2">                    WHERE type = :type and value != &#39;und&#39; and value != &#39;unknown&#39; AND pfos.author_id=:id &quot;&quot;&quot;</span>
         <span class="n">params</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">id</span>
         <span class="n">extra</span> <span class="o">+=</span>  <span class="s2">&quot; GROUP BY dd.id &quot;</span>
+    <span class="k">elif</span> <span class="n">doi</span><span class="p">:</span> <span class="c1"># default publication</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT SUM(ddp.count) as count, dd.value</span>
+<span class="s2">                    FROM discussion_data_point as ddp</span>
+<span class="s2">                         JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)</span>
+<span class="s2">                    WHERE type = :type and value != &#39;und&#39; and value != &#39;unknown&#39; AND publication_doi=:doi &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doi</span>
+        <span class="n">extra</span> <span class="o">+=</span>  <span class="s2">&quot; GROUP BY dd.id &quot;</span>
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># default publication</span>
         <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;SELECT count, dd.value</span>
 <span class="s2">                    FROM counted_discussion_data</span>
@@ -998,10 +1005,6 @@
     <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
         <span class="n">params</span><span class="p">[</span><span class="s1">&#39;limit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">limit</span>
         <span class="n">extra</span> <span class="o">+=</span> <span class="s2">&quot; LIMIT :limit &quot;</span>
-
-    <span class="k">if</span> <span class="n">doi</span><span class="p">:</span>
-        <span class="n">query</span> <span class="o">+=</span> <span class="s1">&#39;AND publication_doi=:doi &#39;</span>
-        <span class="n">params</span><span class="p">[</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doi</span>
 
     <span class="n">query</span> <span class="o">+=</span> <span class="n">extra</span>
     <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
@@ -1050,7 +1053,42 @@
                                              <span class="n">dd_type</span><span class="o">=</span><span class="s2">&quot;lang&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; get discussion types with count an percentage from postgresql &quot;&quot;&quot;</span>
     <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">            WITH result AS</span>
+<span class="s2">                WITH result AS</span>
+<span class="s2">             (</span>
+<span class="s2">                 (</span>
+<span class="s2">                     SELECT &quot;value&quot;,</span>
+<span class="s2">                            count                                                            as c,</span>
+<span class="s2">                            ROUND(count / CAST(SUM(count) OVER () AS FLOAT) * 1000) / 10 as p</span>
+<span class="s2">                            FROM counted_discussion_data</span>
+<span class="s2">                                    JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)</span>
+<span class="s2">                           WHERE type = &#39;location&#39; and value != &#39;und&#39; and value != &#39;unknown&#39;</span>
+<span class="s2">                     ORDER BY c DESC</span>
+<span class="s2">                     LIMIT 100</span>
+<span class="s2">                 )</span>
+<span class="s2">                 UNION</span>
+<span class="s2">                 (</span>
+<span class="s2">                     SELECT &#39;total&#39; as &quot;value&quot;, SUM(count) as c, 100 as p</span>
+<span class="s2">                     FROM counted_discussion_data</span>
+<span class="s2">                                    JOIN discussion_data as dd ON (discussion_data_point_id = dd.id)</span>
+<span class="s2">                     WHERE type = &#39;location&#39; and value != &#39;und&#39; and value != &#39;unknown&#39;</span>
+
+<span class="s2">                 )</span>
+<span class="s2">             )</span>
+<span class="s2">            SELECT &quot;value&quot;, c as count, p</span>
+<span class="s2">            FROM result</span>
+<span class="s2">            WHERE result.p &gt;= 1</span>
+<span class="s2">            ORDER BY count DESC;</span>
+<span class="s2">     &quot;&quot;&quot;</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">dd_type</span><span class="p">,</span>
+        <span class="s1">&#39;limit&#39;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+        <span class="s1">&#39;mp&#39;</span><span class="p">:</span> <span class="n">min_percentage</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">doi</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        WITH result AS</span>
 <span class="s2">                     (</span>
 <span class="s2">                         (</span>
 <span class="s2">                             SELECT &quot;value&quot;,</span>
@@ -1060,8 +1098,8 @@
 <span class="s2">                                   FROM discussion_data_point as ddp</span>
 <span class="s2">                                            JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)</span>
 <span class="s2">                                   WHERE type = :type and value != &#39;und&#39; and value != &#39;unknown&#39;</span>
-<span class="s2">                                     &quot;&quot;&quot;</span>
-    <span class="n">extra1</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;) temp</span>
+<span class="s2">                                   AND publication_doi=:doi</span>
+<span class="s2">                            ) temp</span>
 <span class="s2">                             GROUP BY &quot;value&quot;</span>
 <span class="s2">                             ORDER BY c DESC</span>
 <span class="s2">                             LIMIT :limit</span>
@@ -1072,8 +1110,7 @@
 <span class="s2">                             FROM discussion_data_point as ddp</span>
 <span class="s2">                                      JOIN discussion_data as dd ON (ddp.discussion_data_point_id = dd.id)</span>
 <span class="s2">                             WHERE type = :type and value != &#39;und&#39; and value != &#39;unknown&#39;</span>
-<span class="s2">                               &quot;&quot;&quot;</span>
-    <span class="n">extra2</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                             AND publication_doi=:doi</span>
 <span class="s2">                         )</span>
 <span class="s2">                     )</span>
 <span class="s2">            SELECT &quot;value&quot;, c as count, p</span>
@@ -1081,22 +1118,8 @@
 <span class="s2">            WHERE result.p &gt;= :mp</span>
 <span class="s2">            ORDER BY count DESC;</span>
 <span class="s2">        &quot;&quot;&quot;</span>
-    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">dd_type</span><span class="p">,</span>
-        <span class="s1">&#39;limit&#39;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
-        <span class="s1">&#39;mp&#39;</span><span class="p">:</span> <span class="n">min_percentage</span>
-    <span class="p">}</span>
-
-    <span class="k">if</span> <span class="n">doi</span><span class="p">:</span>
-        <span class="n">query</span> <span class="o">+=</span> <span class="s1">&#39; AND publication_doi=:doi &#39;</span>
         <span class="n">params</span><span class="p">[</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">doi</span>
 
-    <span class="n">query</span> <span class="o">+=</span> <span class="n">extra1</span>
-
-    <span class="k">if</span> <span class="n">doi</span><span class="p">:</span>
-        <span class="n">query</span> <span class="o">+=</span> <span class="s1">&#39; AND publication_doi=:doi &#39;</span>
-
-    <span class="n">query</span> <span class="o">+=</span> <span class="n">extra2</span>
     <span class="n">s</span> <span class="o">=</span> <span class="n">text</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
     <span class="c1"># print(query)</span>
     <span class="c1"># print(params)</span>
